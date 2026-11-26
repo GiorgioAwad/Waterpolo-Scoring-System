@@ -1,0 +1,710 @@
+<Window x:Class="FDNDA.Waterpolo.Desktop.Views.MarcadorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FDNDA.Waterpolo.Desktop.ViewModels"
+        Title="Marcador — Waterpolo FDNDA"
+        Width="1280" Height="720" MinWidth="480" MinHeight="270"
+        Background="#06090F" ShowActivated="False"
+        FontFamily="Bahnschrift, Segoe UI" Foreground="White"
+        Typography.NumeralAlignment="Tabular"
+        UseLayoutRounding="True">
+
+    <Window.Resources>
+        <!-- Imagen de identidad: se oculta si no hay imagen o si no se pudo decodificar. -->
+        <Style x:Key="IdentityImage" TargetType="Image">
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
+            <Style.Triggers>
+                <Trigger Property="Source" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <SolidColorBrush x:Key="Muted" Color="#8FA3BC" />
+        <SolidColorBrush x:Key="Amber" Color="#FFB020" />
+
+        <!-- Resultado: en la tanda se achica para dejar lugar a los lanzamientos. -->
+        <Style x:Key="ScoreText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="403" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,-30,0,-64" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CenterMode}" Value="{x:Static vm:ScoreboardCenter.Shootout}">
+                    <Setter Property="FontSize" Value="288" />
+                    <Setter Property="Margin" Value="0,-40,0,-44" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Lanzamiento de la tanda: verde lleno convertido, rojo hueco fallado. -->
+        <DataTemplate x:Key="ShootoutMarkTemplate" DataType="{x:Type vm:ShootoutMark}">
+            <Ellipse Width="38" Height="38" Margin="6,0" StrokeThickness="7" AutomationProperties.Name="{Binding Description}">
+                <Ellipse.Style>
+                    <Style TargetType="Ellipse">
+                        <Setter Property="Fill" Value="Transparent" />
+                        <Setter Property="Stroke" Value="#FF5252" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Converted}" Value="True">
+                                <Setter Property="Fill" Value="#2ECC71" />
+                                <Setter Property="Stroke" Value="#2ECC71" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Ellipse.Style>
+            </Ellipse>
+        </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="RowPanel">
+            <StackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+
+        <!-- Gorro con faltas: número en círculo blanco y tres puntos (llenos los usados). Si la falta es
+             nueva, late una vez al salir el aviso del lado. -->
+        <DataTemplate x:Key="FoulChipTemplate" DataType="{x:Type vm:FoulChip}">
+            <StackPanel x:Name="Chip" Margin="12,0,12,14" RenderTransformOrigin="0.5,0.5" AutomationProperties.Name="{Binding Description}">
+                <StackPanel.RenderTransform>
+                    <ScaleTransform />
+                </StackPanel.RenderTransform>
+                <Grid Width="78" Height="78" HorizontalAlignment="Center">
+                    <Ellipse x:Name="ChipCircle" Fill="White">
+                        <Ellipse.Effect>
+                            <DropShadowEffect Color="#FFB020" ShadowDepth="0" BlurRadius="34" Opacity="0" />
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <TextBlock Text="{Binding CapText}" FontSize="44" FontWeight="Bold" Foreground="#06090F"
+                               AutomationProperties.Name="{Binding Description}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                    <ItemsControl ItemsSource="{Binding Dots}" ItemsPanel="{StaticResource RowPanel}" VerticalAlignment="Center">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Ellipse Width="17" Height="17" Margin="4,0">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="#38FFFFFF" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding}" Value="True">
+                                                    <Setter Property="Fill" Value="White" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding ExtraText}" FontSize="22" FontWeight="Bold" Margin="4,-2,0,0" VerticalAlignment="Center"
+                               Visibility="{Binding HasExtra, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsNew}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard BeginTime="0:0:4.1">
+                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Chip" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)">
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="1" />
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0.3" Value="1.35" />
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="1" />
+                                </DoubleAnimationUsingKeyFrames>
+                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Chip" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)">
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="1" />
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0.3" Value="1.35" />
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="1" />
+                                </DoubleAnimationUsingKeyFrames>
+                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ChipCircle" Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)">
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                    <EasingDoubleKeyFrame KeyTime="0:0:0.3" Value="1" />
+                                    <EasingDoubleKeyFrame KeyTime="0:0:1.2" Value="0" />
+                                </DoubleAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <!-- Solo lectura para el público: sin controles, datos de operación ni registros.
+         Diseño «A · Transmisión» (docs/superpowers/specs/2026-11-25-marcador-publico-design.md):
+         base 1920×1080 escalada al área útil con margen seguro configurable. -->
+    <Grid x:Name="SafeArea">
+        <Viewbox Stretch="Uniform">
+            <Grid Width="1920" Height="1080" Background="#06090F" ClipToBounds="True">
+
+                <!-- Brillo de cada equipo desde su borde: sin cajas ni franjas -->
+                <Canvas IsHitTestVisible="False">
+                    <Ellipse Canvas.Left="-346" Canvas.Top="96" Width="1152" Height="1152">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush>
+                                <GradientStop Color="{Binding HomeGlowColor}" Offset="0" />
+                                <GradientStop Color="#0006090F" Offset="0.62" />
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <Ellipse Canvas.Left="1114" Canvas.Top="96" Width="1152" Height="1152">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush>
+                                <GradientStop Color="{Binding AwayGlowColor}" Offset="0" />
+                                <GradientStop Color="#0006090F" Offset="0.62" />
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                </Canvas>
+
+                <!-- Cabecera: organización, torneo, partido, logo del evento y modo -->
+                <DockPanel Height="134" VerticalAlignment="Top" Margin="50,0">
+                    <Image DockPanel.Dock="Left" Height="81" MaxWidth="200" Margin="0,0,31,0"
+                           Source="{Binding OrganizerLogo, Converter={StaticResource ImageData}, ConverterParameter=162}"
+                           Style="{StaticResource IdentityImage}" AutomationProperties.AutomationId="PublicOrganizerLogo" />
+                    <Border DockPanel.Dock="Right" Background="#FFB020" CornerRadius="8" Padding="17,8" VerticalAlignment="Center"
+                            Margin="28,0,0,0" Visibility="{Binding ShowModeBadge, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding ModeBadge}" FontSize="20" FontWeight="Bold" Foreground="#06090F"
+                                   AutomationProperties.AutomationId="PublicModeBadge" />
+                    </Border>
+                    <Image DockPanel.Dock="Right" Height="81" MaxWidth="220" Margin="28,0,0,0"
+                           Source="{Binding EventLogo, Converter={StaticResource ImageData}, ConverterParameter=162}"
+                           Style="{StaticResource IdentityImage}" AutomationProperties.AutomationId="PublicEventLogo" />
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding MatchLabel, Converter={StaticResource Upper}}" FontSize="22"
+                               Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="28,0,0,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <!-- Un título largo se reduce para entrar completo, sin «…». -->
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding TournamentName, Converter={StaticResource Upper}}" FontSize="40" FontWeight="SemiBold"
+                                       AutomationProperties.AutomationId="PublicTitle" />
+                        </Viewbox>
+                        <TextBlock Text="{Binding Subtitle, Converter={StaticResource Upper}}" FontSize="20" Foreground="{StaticResource Muted}"
+                                   TextTrimming="CharacterEllipsis" Margin="0,6,0,0"
+                                   Visibility="{Binding HasSubtitle, Converter={StaticResource BoolToVisibility}}"
+                                   AutomationProperties.AutomationId="PublicSubtitle" />
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Cuerpo: equipos a los lados, centro según el momento del partido -->
+                <Grid Margin="0,154,0,0" Height="749" VerticalAlignment="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="576" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ===== Local (en juego, descanso, tanda y final) ===== -->
+                    <StackPanel Grid.Column="0" Margin="0,42,0,0" HorizontalAlignment="Center"
+                                Visibility="{Binding CenterMode, Converter={StaticResource EnumVisibility}, ConverterParameter=!Preview}">
+                        <StackPanel Height="150" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Image Height="92" MaxWidth="110" Margin="0,0,20,0" VerticalAlignment="Center"
+                                   Source="{Binding HomeCrest, Converter={StaticResource ImageData}, ConverterParameter=184}"
+                                   Style="{StaticResource IdentityImage}" AutomationProperties.AutomationId="PublicHomeCrest" />
+                            <Image Height="69" MaxWidth="104" Margin="0,0,25,0" VerticalAlignment="Center"
+                                   Source="{Binding HomeFlag, Converter={StaticResource ImageData}, ConverterParameter=138}"
+                                   Style="{StaticResource IdentityImage}" AutomationProperties.AutomationId="PublicHomeFlag" />
+                            <Viewbox StretchDirection="DownOnly" MaxWidth="560" MaxHeight="150" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding HomeName, Converter={StaticResource Upper}}" FontSize="77" FontWeight="Bold"
+                                           TextWrapping="Wrap" TextAlignment="Center" MaxWidth="760"
+                                           LineStackingStrategy="BlockLineHeight" LineHeight="84"
+                                           AutomationProperties.AutomationId="PublicHomeName" />
+                            </Viewbox>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding ShowScores, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock x:Name="HomeScore" Text="{Binding HomeScoreText}" AutomationProperties.AutomationId="PublicHomeScore">
+                                <TextBlock.RenderTransform>
+                                    <ScaleTransform x:Name="HomeScoreScale" />
+                                </TextBlock.RenderTransform>
+                                <TextBlock.Effect>
+                                    <DropShadowEffect x:Name="HomeScoreGlow" Color="#FFD600" ShadowDepth="0" BlurRadius="80" Opacity="0" />
+                                </TextBlock.Effect>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource ScoreText}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HomeDimmed}" Value="True">
+                                                <Setter Property="Foreground" Value="#61FFFFFF" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Border Width="269" Height="13" CornerRadius="6.5" Margin="0,24,0,0" Background="{Binding HomeColor}"
+                                    Visibility="{Binding HasShootout, Converter={StaticResource InverseBoolToVisibility}}" />
+                            <!-- Gorros con faltas (personales, exclusiones y expulsiones): solo cuenta, sin sanción -->
+                            <Viewbox StretchDirection="DownOnly" MaxHeight="150" Margin="0,22,0,0" HorizontalAlignment="Center"
+                                     Visibility="{Binding ShowFouls, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsControl ItemsSource="{Binding HomeFouls}" ItemTemplate="{StaticResource FoulChipTemplate}"
+                                              AutomationProperties.AutomationId="PublicHomeFouls">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel MaxWidth="640" HorizontalAlignment="Center" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </Viewbox>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0"
+                                        Visibility="{Binding HasShootout, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsControl ItemsSource="{Binding HomeShootoutMarks}" ItemsPanel="{StaticResource RowPanel}" VerticalAlignment="Center"
+                                              ItemTemplate="{StaticResource ShootoutMarkTemplate}" AutomationProperties.AutomationId="PublicHomeShootoutMarks" />
+                                <TextBlock Text="{Binding HomeShootoutText}" FontSize="81" FontWeight="Bold" Foreground="{StaticResource Amber}"
+                                           VerticalAlignment="Center" Margin="20,0,0,0" AutomationProperties.AutomationId="PublicHomeShootout" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ===== Visita (espejo del local) ===== -->
+                    <StackPanel Grid.Column="2" Margin="0,42,0,0" HorizontalAlignment="Center"
+                                Visibility="{Binding CenterMode, Converter={StaticResource EnumVisibility}, ConverterParameter=!Preview}">
+                        <StackPanel Height="150" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Viewbox StretchDirection="DownOnly" MaxWidth="560" MaxHeight="150" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding AwayName, Converter={StaticResource Upper}}" FontSize="77" FontWeight="Bold"
+                                           TextWrapping="Wrap" TextAlignment="Center" MaxWidth="760"
+                                           LineStackingStrategy="BlockLineHeight" LineHeight="84"
+                                           AutomationProperties.AutomationId="PublicAwayName" />
+                            </Viewbox>
+                            <Image Height="69" MaxWidth="104" Margin="25,0,0,0" VerticalAlignment="Center"
+                                   Source="{Binding AwayFlag, Converter={StaticResource ImageData}, ConverterParameter=138}"
+                                   Style="{StaticResource IdentityImage}" AutomationProperties.AutomationId="PublicAwayFlag" />
+                            <Image Height="92" MaxWidth="110" Margin="20,0,0,0" VerticalAlignment="Center"
+                                   Source="{Binding AwayCrest, Converter={StaticResource ImageData}, ConverterParameter=184}"
+                                   Style="{StaticResource IdentityImage}" AutomationProperties.AutomationId="PublicAwayCrest" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding ShowScores, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock x:Name="AwayScore" Text="{Binding AwayScoreText}" AutomationProperties.AutomationId="PublicAwayScore">
+                                <TextBlock.RenderTransform>
+                                    <ScaleTransform x:Name="AwayScoreScale" />
+                                </TextBlock.RenderTransform>
+                                <TextBlock.Effect>
+                                    <DropShadowEffect x:Name="AwayScoreGlow" Color="#FFD600" ShadowDepth="0" BlurRadius="80" Opacity="0" />
+                                </TextBlock.Effect>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource ScoreText}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AwayDimmed}" Value="True">
+                                                <Setter Property="Foreground" Value="#61FFFFFF" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Border Width="269" Height="13" CornerRadius="6.5" Margin="0,24,0,0" Background="{Binding AwayColor}"
+                                    Visibility="{Binding HasShootout, Converter={StaticResource InverseBoolToVisibility}}" />
+                            <!-- Gorros con faltas (personales, exclusiones y expulsiones): solo cuenta, sin sanción -->
+                            <Viewbox StretchDirection="DownOnly" MaxHeight="150" Margin="0,22,0,0" HorizontalAlignment="Center"
+                                     Visibility="{Binding ShowFouls, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsControl ItemsSource="{Binding AwayFouls}" ItemTemplate="{StaticResource FoulChipTemplate}"
+                                              AutomationProperties.AutomationId="PublicAwayFouls">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel MaxWidth="640" HorizontalAlignment="Center" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </Viewbox>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0"
+                                        Visibility="{Binding HasShootout, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding AwayShootoutText}" FontSize="81" FontWeight="Bold" Foreground="{StaticResource Amber}"
+                                           VerticalAlignment="Center" Margin="0,0,20,0" AutomationProperties.AutomationId="PublicAwayShootout" />
+                                <ItemsControl ItemsSource="{Binding AwayShootoutMarks}" ItemsPanel="{StaticResource RowPanel}" VerticalAlignment="Center"
+                                              ItemTemplate="{StaticResource ShootoutMarkTemplate}" AutomationProperties.AutomationId="PublicAwayShootoutMarks" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ===== Previa: escudos o banderas grandes ===== -->
+                    <StackPanel Grid.Column="0" Margin="0,70,0,0" HorizontalAlignment="Center"
+                                Visibility="{Binding CenterMode, Converter={StaticResource EnumVisibility}, ConverterParameter=Preview}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Height="192">
+                            <Image Height="192" MaxWidth="230" Margin="10,0"
+                                   Source="{Binding HomeCrest, Converter={StaticResource ImageData}, ConverterParameter=384}" Style="{StaticResource IdentityImage}" />
+                            <Image Height="192" MaxWidth="288" Margin="10,0"
+                                   Source="{Binding HomeFlag, Converter={StaticResource ImageData}, ConverterParameter=384}" Style="{StaticResource IdentityImage}" />
+                        </StackPanel>
+                        <Viewbox StretchDirection="DownOnly" MaxWidth="620" MaxHeight="210" Margin="0,50,0,0">
+                            <TextBlock Text="{Binding HomeName, Converter={StaticResource Upper}}" FontSize="96" FontWeight="Bold"
+                                       TextWrapping="Wrap" TextAlignment="Center" MaxWidth="820" />
+                        </Viewbox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="0,70,0,0" HorizontalAlignment="Center"
+                                Visibility="{Binding CenterMode, Converter={StaticResource EnumVisibility}, ConverterParameter=Preview}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Height="192">
+                            <Image Height="192" MaxWidth="288" Margin="10,0"
+                                   Source="{Binding AwayFlag, Converter={StaticResource ImageData}, ConverterParameter=384}" Style="{StaticResource IdentityImage}" />
+                            <Image Height="192" MaxWidth="230" Margin="10,0"
+                                   Source="{Binding AwayCrest, Converter={StaticResource ImageData}, ConverterParameter=384}" Style="{StaticResource IdentityImage}" />
+                        </StackPanel>
+                        <Viewbox StretchDirection="DownOnly" MaxWidth="620" MaxHeight="210" Margin="0,50,0,0">
+                            <TextBlock Text="{Binding AwayName, Converter={StaticResource Upper}}" FontSize="96" FontWeight="Bold"
+                                       TextWrapping="Wrap" TextAlignment="Center" MaxWidth="820" />
+                        </Viewbox>
+                    </StackPanel>
+
+                    <!-- ===== Centro ===== -->
+                    <StackPanel Grid.Column="1" Margin="0,27,0,0" AutomationProperties.AutomationId="PublicCenterMode"
+                                AutomationProperties.Name="{Binding CenterMode}">
+                        <StackPanel x:Name="PeriodLine" Orientation="Horizontal" HorizontalAlignment="Center" Height="40" RenderTransformOrigin="0.5,0.5">
+                            <StackPanel.RenderTransform>
+                                <ScaleTransform x:Name="PeriodLineScale" />
+                            </StackPanel.RenderTransform>
+                            <StackPanel.Effect>
+                                <BlurEffect x:Name="PeriodLineBlur" Radius="0" />
+                            </StackPanel.Effect>
+                            <TextBlock Text="{Binding PeriodText}" FontSize="29" VerticalAlignment="Center" AutomationProperties.AutomationId="PublicStage">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#C9D4E3" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CenterMode}" Value="{x:Static vm:ScoreboardCenter.Shootout}">
+                                                <Setter Property="Foreground" Value="#FFB020" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ItemsControl ItemsSource="{Binding PeriodPips}" ItemsPanel="{StaticResource RowPanel}" Margin="16,0,0,0"
+                                          VerticalAlignment="Center" AutomationProperties.AutomationId="PublicPeriodPips"
+                                          Visibility="{Binding ShowPeriodPips, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:PeriodPip}">
+                                        <Border Width="31" Height="9" CornerRadius="4.5" Margin="4,0">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#2EFFFFFF" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Played}" Value="True">
+                                                            <Setter Property="Background" Value="White" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- En juego: reloj de partido y anillo de posesión -->
+                        <StackPanel Visibility="{Binding ShowClocks, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding GameClockText}" FontSize="221" HorizontalAlignment="Center"
+                                       Margin="0,-14,0,-18" AutomationProperties.AutomationId="PublicGameClock">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="White" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ClocksDimmed}" Value="True">
+                                                <Setter Property="Foreground" Value="#47FFFFFF" />
+                                                <Setter Property="FontWeight" Value="Light" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Grid Width="269" Height="269" Margin="0,8,0,0" AutomationProperties.AutomationId="PublicShotRing">
+                                <Ellipse Stroke="#1AFFFFFF" StrokeThickness="16" />
+                                <Path Data="{Binding ShotClockFraction, Converter={StaticResource ShotRing}}" Stroke="#FFB020" StrokeThickness="16"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Visibility="{Binding TimeoutActive, Converter={StaticResource InverseBoolToVisibility}}" />
+                                <!-- Tiempo muerto en curso (reloj de la consola): anillo azul con su cuenta -->
+                                <Path Data="{Binding TimeoutFraction, Converter={StaticResource ShotRing}}" Stroke="#2F80ED" StrokeThickness="16"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Visibility="{Binding TimeoutActive, Converter={StaticResource BoolToVisibility}}" />
+                                <Viewbox StretchDirection="DownOnly" MaxWidth="205" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                         Visibility="{Binding TimeoutActive, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding TimeoutClockText}" FontSize="127" FontWeight="Bold" Foreground="White" Margin="0,-6,0,0"
+                                               AutomationProperties.AutomationId="PublicTimeoutClock" />
+                                </Viewbox>
+                                <TextBlock Text="{Binding ShotClockText}" FontSize="127" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" Margin="0,-6,0,0" AutomationProperties.AutomationId="PublicShotClock">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#FFB020" />
+                                            <Setter Property="FontWeight" Value="Bold" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ClocksDimmed}" Value="True">
+                                                    <Setter Property="Foreground" Value="#47FFFFFF" />
+                                                    <Setter Property="FontWeight" Value="Light" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding TimeoutActive}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                            <TextBlock FontSize="19" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="POSESIÓN" />
+                                        <Setter Property="Foreground" Value="#8FA3BC" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TimeoutActive}" Value="True">
+                                                <Setter Property="Text" Value="TIEMPO MUERTO" />
+                                                <Setter Property="Foreground" Value="#6FA8FF" />
+                                                <Setter Property="FontWeight" Value="Bold" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <!-- Aviso de señal: debajo de los relojes, sin taparlos -->
+                            <Border Background="#C62828" CornerRadius="8" Padding="27,9" HorizontalAlignment="Center" Margin="0,22,0,0"
+                                    Visibility="{Binding ShowSignalNotice, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="SEÑAL DE TIEMPO NO DISPONIBLE" FontSize="24" FontWeight="Bold"
+                                           AutomationProperties.AutomationId="PublicSignalNotice" />
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Previa, descanso, tanda y final: texto grande en lugar de los relojes -->
+                        <StackPanel Visibility="{Binding ShowClocks, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock x:Name="CenterHeadlineText" Text="{Binding CenterHeadline}" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5"
+                                       AutomationProperties.AutomationId="PublicCenterHeadline">
+                                <TextBlock.RenderTransform>
+                                    <ScaleTransform x:Name="HeadlineScale" />
+                                </TextBlock.RenderTransform>
+                                <TextBlock.Effect>
+                                    <BlurEffect x:Name="HeadlineBlur" Radius="0" />
+                                </TextBlock.Effect>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="115" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Margin" Value="0,130,0,0" />
+                                        <Setter Property="Foreground" Value="White" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CenterMode}" Value="{x:Static vm:ScoreboardCenter.Preview}">
+                                                <Setter Property="FontSize" Value="154" />
+                                                <Setter Property="FontWeight" Value="Light" />
+                                                <Setter Property="Foreground" Value="#8FA3BC" />
+                                                <Setter Property="Margin" Value="0,110,0,0" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding CenterMode}" Value="{x:Static vm:ScoreboardCenter.Shootout}">
+                                                <Setter Property="FontSize" Value="96" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding CenterNote}" FontSize="27" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"
+                                       Margin="0,16,0,0" Visibility="{Binding HasCenterNote, Converter={StaticResource BoolToVisibility}}"
+                                       AutomationProperties.AutomationId="PublicCenterNote" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Franja inferior: auspiciadores sobre un degradado muy suave -->
+                <Grid Height="144" VerticalAlignment="Bottom">
+                    <Grid.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#00FFFFFF" Offset="0" />
+                            <GradientStop Color="#0CFFFFFF" Offset="1" />
+                        </LinearGradientBrush>
+                    </Grid.Background>
+                    <ItemsControl ItemsSource="{Binding Sponsors}" Margin="77,0" VerticalAlignment="Center" AutomationProperties.AutomationId="PublicSponsors"
+                                  Visibility="{Binding HasSponsors, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="1" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SponsorView}">
+                                <Image Margin="20,0" MaxHeight="96"
+                                       Source="{Binding Image, Converter={StaticResource ImageData}, ConverterParameter=192}"
+                                       Style="{StaticResource IdentityImage}" AutomationProperties.Name="{Binding Name}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
+                <!-- Anuncio del centro: brillo suave que cruza toda la pantalla; no tapa los relojes -->
+                <Rectangle x:Name="AnnounceSweep" Width="460" Height="1300" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           Margin="0,-110,0,0" IsHitTestVisible="False" Opacity="0">
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#00FFFFFF" Offset="0" />
+                            <GradientStop Color="#2EFFFFFF" Offset="0.5" />
+                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                    <Rectangle.RenderTransform>
+                        <TransformGroup>
+                            <SkewTransform AngleX="-16" />
+                            <TranslateTransform x:Name="AnnounceSweepShift" X="-700" />
+                        </TransformGroup>
+                    </Rectangle.RenderTransform>
+                </Rectangle>
+
+                <!-- Aviso «toma del lado»: cubre la columna del equipo, nunca la central de los relojes.
+                     La ventana lo ubica, recorta y anima al subir BannerGeneration. -->
+                <Grid x:Name="Takeover" Width="691" Height="946" Margin="0,134,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
+                      Visibility="Hidden" IsHitTestVisible="False" ClipToBounds="True">
+                    <Grid.RenderTransform>
+                        <TranslateTransform x:Name="TakeoverShift" />
+                    </Grid.RenderTransform>
+                    <Grid.Background>
+                        <LinearGradientBrush x:Name="TakeoverBrush" StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="{Binding Banner.Background, FallbackValue=#37474F}" Offset="0" />
+                            <GradientStop Color="{Binding Banner.BackgroundDark, FallbackValue=#1C2428}" Offset="1" />
+                        </LinearGradientBrush>
+                    </Grid.Background>
+
+                    <Canvas>
+                        <!-- Ondas de agua desde el centro del panel (solo gol) -->
+                        <Ellipse x:Name="Ripple1" Canvas.Left="-327" Canvas.Top="-247" Width="1344" Height="1344" Stroke="#8CFFFFFF"
+                                 StrokeThickness="9" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform x:Name="Ripple1Scale" ScaleX="0" ScaleY="0" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse x:Name="Ripple2" Canvas.Left="-327" Canvas.Top="-247" Width="1344" Height="1344" Stroke="#73FFFFFF"
+                                 StrokeThickness="9" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform x:Name="Ripple2Scale" ScaleX="0" ScaleY="0" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <!-- Brillo diagonal que cruza el panel -->
+                        <Rectangle Width="192" Height="1100" Canvas.Top="-80">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#00FFFFFF" Offset="0" />
+                                    <GradientStop Color="#57FFFFFF" Offset="0.5" />
+                                    <GradientStop Color="#00FFFFFF" Offset="1" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <SkewTransform AngleX="-18" />
+                                    <TranslateTransform x:Name="ShineShift" X="-400" />
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                    </Canvas>
+
+                    <!-- Texto completo del aviso para accesibilidad y automatización: ocupa el panel, no se ve. -->
+                    <TextBlock Text="{Binding BannerText}" Opacity="0" FontSize="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                               AutomationProperties.AutomationId="PublicActionBanner" />
+
+                    <Grid x:Name="TakeoverContent" Margin="46,0,115,0">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-40,0,0">
+                            <!-- Lo que «aparece»: «¡GOL!» o el círculo con el gorro / el ícono -->
+                            <Grid x:Name="PopPart" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Center">
+                                <Grid.RenderTransform>
+                                    <ScaleTransform x:Name="PopScale" />
+                                </Grid.RenderTransform>
+                                <Grid.Effect>
+                                    <BlurEffect x:Name="PopBlur" Radius="0" />
+                                </Grid.Effect>
+                                <Viewbox StretchDirection="DownOnly" MaxWidth="520"
+                                         Visibility="{Binding Banner.IsGoal, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                                    <TextBlock Text="{Binding Banner.Headline}" FontSize="230" FontWeight="Bold" FontStyle="Italic"
+                                               Foreground="{Binding Banner.Foreground, FallbackValue=White}" />
+                                </Viewbox>
+                                <Grid Width="221" Height="221"
+                                      Visibility="{Binding Banner.IsGoal, Converter={StaticResource InverseBoolToVisibility}, FallbackValue=Collapsed}">
+                                    <Ellipse>
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="White" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Banner.IsExpulsion}" Value="True">
+                                                        <Setter Property="Fill" Value="#C62828" />
+                                                        <Setter Property="Stroke" Value="White" />
+                                                        <Setter Property="StrokeThickness" Value="11" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                    <TextBlock Text="{Binding Banner.CapText}" FontSize="134" FontWeight="Bold" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" Margin="0,-6,0,0"
+                                               Visibility="{Binding Banner.ShowsCap, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="#141414" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Banner.IsExpulsion}" Value="True">
+                                                        <Setter Property="Foreground" Value="White" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <!-- Cronómetro del tiempo muerto -->
+                                    <Viewbox Width="127" Height="127"
+                                             Visibility="{Binding Banner.IsTimeout, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                                        <Canvas Width="24" Height="24">
+                                            <Ellipse Canvas.Left="4" Canvas.Top="5.5" Width="16" Height="16" Stroke="#1A56B8" StrokeThickness="2.4" />
+                                            <Path Data="M12,9 L12,13.5 L15,15.5" Stroke="#1A56B8" StrokeThickness="2.4"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                                            <Path Data="M9.5,2.5 L14.5,2.5" Stroke="#1A56B8" StrokeThickness="2.4"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Grid>
+                            </Grid>
+
+                            <!-- Lo que «sube»: la palabra (salvo en gol) y la línea del jugador o del equipo -->
+                            <StackPanel x:Name="RisePart" HorizontalAlignment="Center">
+                                <StackPanel.RenderTransform>
+                                    <TranslateTransform x:Name="RiseShift" />
+                                </StackPanel.RenderTransform>
+                                <Viewbox StretchDirection="DownOnly" MaxWidth="470" Margin="0,30,0,0"
+                                         Visibility="{Binding Banner.IsGoal, Converter={StaticResource InverseBoolToVisibility}, FallbackValue=Collapsed}">
+                                    <TextBlock Text="{Binding Banner.Headline}" FontSize="88" FontWeight="Bold" TextAlignment="Center"
+                                               LineStackingStrategy="BlockLineHeight" LineHeight="94"
+                                               Foreground="{Binding Banner.Foreground, FallbackValue=White}" />
+                                </Viewbox>
+                                <!-- Faltas del jugador ya contando esta (personal, exclusión o expulsión) -->
+                                <Border HorizontalAlignment="Center" Margin="0,22,0,0" Padding="24,6" CornerRadius="10" Background="#2E000000"
+                                        BorderBrush="#73FFFFFF" BorderThickness="2"
+                                        Visibility="{Binding Banner.HasFoulLine, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                                    <TextBlock Text="{Binding Banner.FoulLine}" FontSize="44" FontWeight="Bold"
+                                               Foreground="{Binding Banner.Foreground, FallbackValue=White}" />
+                                </Border>
+                                <Viewbox StretchDirection="DownOnly" MaxWidth="520" Margin="0,34,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Grid Width="84" Height="84" Margin="0,0,20,0" VerticalAlignment="Center"
+                                              Visibility="{Binding Banner.IsGoal, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                                            <Ellipse Fill="White" />
+                                            <TextBlock Text="{Binding Banner.CapText}" FontSize="46" FontWeight="Bold" Foreground="Black"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Image Height="69" MaxWidth="104" Margin="0,0,20,0" VerticalAlignment="Center"
+                                               Source="{Binding BannerTeamImage, Converter={StaticResource ImageData}, ConverterParameter=138}"
+                                               Style="{StaticResource IdentityImage}" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Banner.PlayerName}" FontSize="50" FontWeight="Bold"
+                                                       Foreground="{Binding Banner.Foreground, FallbackValue=White}"
+                                                       Visibility="{Binding Banner.IsTimeout, Converter={StaticResource InverseBoolToVisibility}, FallbackValue=Collapsed}" />
+                                            <TextBlock Text="{Binding Banner.TeamName, Converter={StaticResource Upper}}" FontWeight="SemiBold"
+                                                       Foreground="{Binding Banner.Foreground, FallbackValue=White}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="FontSize" Value="25" />
+                                                        <Setter Property="Opacity" Value="0.85" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Banner.IsTimeout}" Value="True">
+                                                                <Setter Property="FontSize" Value="46" />
+                                                                <Setter Property="Opacity" Value="1" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Viewbox>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+
+                <!-- Sin partido abierto -->
+                <Border Background="#06090F" Visibility="{Binding HasMatch, Converter={StaticResource InverseBoolToVisibility}}">
+                    <TextBlock Text="MARCADOR DE WATERPOLO" FontSize="96" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </Viewbox>
+    </Grid>
+</Window>

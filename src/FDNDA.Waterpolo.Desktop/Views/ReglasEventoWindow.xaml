@@ -1,0 +1,128 @@
+<Window x:Class="FDNDA.Waterpolo.Desktop.Views.ReglasEventoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FDNDA.Waterpolo.Desktop.ViewModels"
+        Title="{Binding Title}"
+        Width="640" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource SurfaceBrush}" FontFamily="Segoe UI" FontSize="14"
+        FocusManager.FocusedElement="{Binding ElementName=PeriodCountBox}">
+    <Window.Resources>
+        <Style x:Key="RulesHint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="10,0,0,0" />
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="20">
+        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentPresetText}" Margin="0,4,0,0" TextWrapping="Wrap" AutomationProperties.AutomationId="RulesCurrent" />
+        <TextBlock Text="{Binding ApplicabilityText}" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                   AutomationProperties.AutomationId="RulesApplicability" />
+
+        <!-- Presets -->
+        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+            <StackPanel>
+                <TextBlock Text="Presets" FontWeight="SemiBold" />
+                <WrapPanel Margin="0,6,0,0">
+                    <Button Content="Cargar valores DEMO" Command="{Binding LoadDemoCommand}" Margin="0,0,8,0"
+                            ToolTip="Valores ilustrativos, no reglamentarios" AutomationProperties.AutomationId="LoadDemoRules" />
+                    <Button Content="Competencia (pendiente de aprobación técnica)" IsEnabled="False" Margin="0"
+                            AutomationProperties.AutomationId="CompetitionRules" />
+                </WrapPanel>
+                <TextBlock Text="{x:Static vm:RulesEditorViewModel.CompetitionPresetNote}" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Valores -->
+        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label Grid.Row="0" Content="_Periodos:" Target="{Binding ElementName=PeriodCountBox}" />
+                <TextBox x:Name="PeriodCountBox" Grid.Row="0" Grid.Column="1" Text="{Binding PeriodCountText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="2" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesPeriodCount" />
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="1 a 20" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="1" Content="_Duración del periodo:" Target="{Binding ElementName=PeriodDurationBox}" />
+                <TextBox x:Name="PeriodDurationBox" Grid.Row="1" Grid.Column="1" Text="{Binding PeriodDurationText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="6" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesPeriodDuration" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="min:seg (8:00) o minutos" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="2" Content="Descanso entre _periodos:" Target="{Binding ElementName=BreakBox}" />
+                <TextBox x:Name="BreakBox" Grid.Row="2" Grid.Column="1" Text="{Binding BreakDurationText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="6" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesBreak" />
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="min:seg" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="3" Content="Descanso de _medio tiempo:" Target="{Binding ElementName=HalftimeBox}" />
+                <TextBox x:Name="HalftimeBox" Grid.Row="3" Grid.Column="1" Text="{Binding HalftimeDurationText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="6" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesHalftime" />
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="min:seg" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="4" Content="_Tiempos muertos por equipo:" Target="{Binding ElementName=TimeoutsBox}" />
+                <TextBox x:Name="TimeoutsBox" Grid.Row="4" Grid.Column="1" Text="{Binding TimeoutsText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="2" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesTimeouts" />
+                <TextBlock Grid.Row="4" Grid.Column="2" Text="0 a 10; la mesa no los limita" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="5" Content="_Posesión:" Target="{Binding ElementName=ShotClockBox}" />
+                <TextBox x:Name="ShotClockBox" Grid.Row="5" Grid.Column="1" Text="{Binding ShotClockText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="3" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesShotClock" />
+                <TextBlock Grid.Row="5" Grid.Column="2" Text="segundos (5 a 120)" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="6" Content="Posesión _reducida:" Target="{Binding ElementName=ShotClockAltBox}" />
+                <TextBox x:Name="ShotClockAltBox" Grid.Row="6" Grid.Column="1" Text="{Binding ShotClockAlternateText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="3" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesShotClockAlternate" />
+                <TextBlock Grid.Row="6" Grid.Column="2" Text="segundos; no mayor que la posesión" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="7" Content="Periodos de prórro_ga:" Target="{Binding ElementName=OvertimePeriodsBox}" />
+                <TextBox x:Name="OvertimePeriodsBox" Grid.Row="7" Grid.Column="1" Text="{Binding OvertimePeriodsText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="2" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesOvertimePeriods" />
+                <TextBlock Grid.Row="7" Grid.Column="2" Text="0 = sin prórroga; se juegan completos" Style="{StaticResource RulesHint}" />
+
+                <Label Grid.Row="8" Content="D_uración de la prórroga:" Target="{Binding ElementName=OvertimeDurationBox}" />
+                <TextBox x:Name="OvertimeDurationBox" Grid.Row="8" Grid.Column="1" Text="{Binding OvertimeDurationText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="6" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RulesOvertimeDuration" />
+                <TextBlock Grid.Row="8" Grid.Column="2" Text="min:seg por periodo de prórroga" Style="{StaticResource RulesHint}" />
+
+                <CheckBox Grid.Row="9" Grid.ColumnSpan="3" Content="Tanda de _penales habilitada" IsChecked="{Binding PenaltyShootoutEnabled}"
+                          Margin="4,8,0,0" AutomationProperties.AutomationId="RulesShootout" />
+                <StackPanel Grid.Row="10" Grid.ColumnSpan="3" Margin="4,6,0,0">
+                    <TextBlock Text="{x:Static vm:RulesEditorViewModel.ShootoutNote}" Style="{StaticResource RulesHint}" Margin="0" />
+                    <TextBlock Text="{x:Static vm:RulesEditorViewModel.ShotClockNote}" Style="{StaticResource RulesHint}" Margin="0,2,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TextBlock Text="{Binding OutcomeText}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,12,0,0"
+                   AutomationProperties.AutomationId="RulesOutcome" />
+        <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
+                   AutomationProperties.AutomationId="RulesStatus" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Guardar reglas" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" IsDefault="True" MinWidth="130"
+                    AutomationProperties.AutomationId="SaveRules" />
+            <Button Content="Cancelar" Command="{Binding CancelCommand}" IsCancel="True" MinWidth="110" Margin="0"
+                    AutomationProperties.AutomationId="CancelRules" />
+        </StackPanel>
+    </StackPanel>
+</Window>

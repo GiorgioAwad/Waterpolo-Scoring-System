@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Herramienta de diagnóstico para la prueba con la consola (hito B). Programa aparte: la mesa no
+       la usa ni la distribuye. Solo LEE el puerto serie; no tiene ninguna operación de escritura. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>FDNDA.Waterpolo.Captura</RootNamespace>
+    <AssemblyName>FDNDA.Waterpolo.Captura</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FDNDA.Waterpolo.Infrastructure\FDNDA.Waterpolo.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" />
+  </ItemGroup>
+
+</Project>

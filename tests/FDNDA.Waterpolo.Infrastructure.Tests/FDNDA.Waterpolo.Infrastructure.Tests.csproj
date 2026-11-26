@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FDNDA.Waterpolo.Infrastructure\FDNDA.Waterpolo.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\FDNDA.Waterpolo.Application\FDNDA.Waterpolo.Application.csproj" />
+    <ProjectReference Include="..\..\src\FDNDA.Waterpolo.Domain\FDNDA.Waterpolo.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+﻿<Project>
+  <!-- Versiones fijas para toda la solución. La lista de licencias está en docs/arquitectura.md. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Distribuidas con el programa -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.15" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- Solo la herramienta de captura de tools/ (hito B; no se distribuye con la mesa) -->
+    <PackageVersion Include="System.IO.Ports" Version="10.0.15" />
+    <!-- Solo pruebas (no se distribuyen) -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <ProjectReference Include="..\..\src\FDNDA.Waterpolo.Desktop\FDNDA.Waterpolo.Desktop.csproj" />
+    <Compile Include="..\FDNDA.Waterpolo.Infrastructure.Tests\Support\TestSupport.cs" Link="Support\TestSupport.cs" />
+    <Compile Include="..\FDNDA.Waterpolo.Infrastructure.Tests\Support\RosterFiles.cs" Link="Support\RosterFiles.cs" />
+    <Compile Include="..\FDNDA.Waterpolo.Infrastructure.Tests\Support\TestImages.cs" Link="Support\TestImages.cs" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,63 @@
+<Application x:Class="FDNDA.Waterpolo.Desktop.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:p="clr-namespace:FDNDA.Waterpolo.Desktop.Presentation">
+    <Application.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <p:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
+        <p:NotNullToVisibilityConverter x:Key="NotNullToVisibility" />
+        <p:ImageDataConverter x:Key="ImageData" />
+        <p:ShotRingGeometryConverter x:Key="ShotRing" />
+        <p:UpperCaseConverter x:Key="Upper" />
+        <p:EnumVisibilityConverter x:Key="EnumVisibility" />
+
+        <!-- Paleta de la mesa -->
+        <SolidColorBrush x:Key="InkBrush" Color="#102A43" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#52606D" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#F4F6F8" />
+        <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="LineBrush" Color="#D9E2EC" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#0B63CE" />
+        <SolidColorBrush x:Key="DangerBrush" Color="#B71C1C" />
+        <SolidColorBrush x:Key="DemoBrush" Color="#FF9800" />
+
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="MinHeight" Value="44" />
+            <Setter Property="FontSize" Value="16" />
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+
+        <!-- Imagen de identidad en la mesa y sus diálogos: se oculta si no hay imagen o no se pudo decodificar. -->
+        <Style x:Key="DeskIdentityImage" TargetType="Image">
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
+            <Style.Triggers>
+                <Trigger Property="Source" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+    </Application.Resources>
+</Application>

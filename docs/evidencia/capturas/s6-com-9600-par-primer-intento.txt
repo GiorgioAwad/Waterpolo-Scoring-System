@@ -1,0 +1,48 @@
+# Captura cruda de la salida de tablero (solo lectura).
+# Puerto COM5, 9600 baudios, paridad Even, 8 bits, 1 bit de parada.
+# Inicio (UTC): 2026-11-24 20:48:52.
+# Prueba del adaptador, sin consola
+formato,fdnda-captura-cts,1
+327,14
+332,A53FA53F853F843FA53F3F84DC
+1297,14
+1299,29
+1299,3F
+1300,08
+1300,3F
+1301,08
+1301,3F
+1302,08
+1303,3F
+1304,3F
+1304,08
+1305,08
+1306,FF
+1306,3F
+2312,14
+2322,293F083F083F083F083F08FF3F
+3317,14
+3318,29
+3319,3F
+3320,3F
+3320,08
+3321,08
+3322,3F
+3323,08
+3324,3F083F
+3324,08
+3326,3F
+3326,FF
+4298,14
+4299,A5
+4300,3F
+4301,A5
+4301,3F85
+4302,3F
+4302,84
+4302,3F
+4303,A5
+4304,3F
+4305,843F
+4305,DC
+# Fin: 5.4 s, 70 bytes, 25 errores de línea (paridad o trama) informados por el puerto.

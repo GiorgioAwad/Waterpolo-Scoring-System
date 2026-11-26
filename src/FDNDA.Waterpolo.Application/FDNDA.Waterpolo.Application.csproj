@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>FDNDA.Waterpolo.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FDNDA.Waterpolo.Domain\FDNDA.Waterpolo.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

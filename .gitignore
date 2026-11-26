@@ -1,0 +1,19 @@
+# Compilación .NET
+bin/
+obj/
+artifacts/
+*.user
+.vs/
+TestResults/
+
+# SDK local de desarrollo (scripts/instalar-sdk-local.ps1)
+.tools/
+
+# Datos locales y respaldos: nunca al repositorio
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# Maquetas de la sesión de diseño (compañero visual)
+.superpowers/

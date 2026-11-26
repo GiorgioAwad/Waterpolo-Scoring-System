@@ -1,0 +1,191 @@
+<Window x:Class="FDNDA.Waterpolo.Desktop.Views.IdentidadEventoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FDNDA.Waterpolo.Desktop.ViewModels"
+        Title="{Binding Title}"
+        Width="900" Height="760" MinWidth="760" MinHeight="600"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource SurfaceBrush}" FontFamily="Segoe UI" FontSize="14"
+        FocusManager.FocusedElement="{Binding ElementName=IdentityTitleBox}">
+    <Window.Resources>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <!-- Fondo oscuro como el del marcador para juzgar cómo se verán los logos. -->
+        <Style x:Key="PreviewBox" TargetType="Border">
+            <Setter Property="Background" Value="#0D2238" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="150" />
+            <Setter Property="Height" Value="76" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="18">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap" />
+            <TextBlock Text="La identidad es solo presentación: se ve en el marcador y en la mesa de todos los partidos del evento, y no cambia resultados ni incidencias."
+                       Style="{StaticResource Hint}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Pie: estado y botones -->
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" AutomationProperties.AutomationId="IdentityStatus">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <DockPanel Margin="0,10,0,0">
+                <Button DockPanel.Dock="Left" Content="Quitar identidad del evento" Command="{Binding RemoveIdentityCommand}"
+                        AutomationProperties.AutomationId="RemoveIdentity" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Guardar identidad" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" IsDefault="True"
+                            MinWidth="150" AutomationProperties.AutomationId="SaveIdentity" />
+                    <Button Content="Cancelar" Command="{Binding CancelCommand}" IsCancel="True" MinWidth="110" Margin="0"
+                            AutomationProperties.AutomationId="CancelIdentity" />
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+            <StackPanel>
+                <!-- Plantilla de ejemplo -->
+                <Border Style="{StaticResource Card}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Usar plantilla de ejemplo" Command="{Binding UseExampleCommand}" Margin="10,0,0,0"
+                                VerticalAlignment="Center" AutomationProperties.AutomationId="UseExampleIdentity" />
+                        <StackPanel>
+                            <TextBlock Text="Plantilla de ejemplo: Panamericano de Waterpolo Sub-17 2027" FontWeight="SemiBold" />
+                            <TextBlock Text="{x:Static vm:EventIdentityViewModel.OfficialNote}" Style="{StaticResource Hint}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Textos y colores -->
+                <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0" Content="Título en el marcador:" Target="{Binding ElementName=IdentityTitleBox}" />
+                        <TextBox x:Name="IdentityTitleBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" MaxLength="120" Margin="0,2" Padding="4"
+                                 Text="{Binding DisplayTitle, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="IdentityTitle" />
+                        <Label Grid.Row="1" Content="Subtítulo (opcional):" Target="{Binding ElementName=IdentitySubtitleBox}" />
+                        <TextBox x:Name="IdentitySubtitleBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" MaxLength="120" Margin="0,2" Padding="4"
+                                 Text="{Binding Subtitle, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="IdentitySubtitle" />
+                        <Label Grid.Row="2" Content="Color de cabecera:" Target="{Binding ElementName=PrimaryColorBox}" />
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,2">
+                            <TextBox x:Name="PrimaryColorBox" Width="90" MaxLength="7" Padding="4"
+                                     Text="{Binding PrimaryColor, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="IdentityPrimaryColor" />
+                            <Border Width="28" Height="22" Margin="6,0" CornerRadius="3" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                    Background="{Binding PrimaryColor}" />
+                            <Button Content="Elegir…" Command="{Binding ChoosePrimaryColorCommand}" Padding="8,2" MinHeight="0" />
+                        </StackPanel>
+                        <Label Grid.Row="3" Content="Color de acento:" Target="{Binding ElementName=AccentColorBox}" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,2">
+                            <TextBox x:Name="AccentColorBox" Width="90" MaxLength="7" Padding="4"
+                                     Text="{Binding AccentColor, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="IdentityAccentColor" />
+                            <Border Width="28" Height="22" Margin="6,0" CornerRadius="3" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                    Background="{Binding AccentColor}" />
+                            <Button Content="Elegir…" Command="{Binding ChooseAccentColorCommand}" Padding="8,2" MinHeight="0" />
+                            <Button Content="Colores predeterminados" Command="{Binding ResetColorsCommand}" Padding="8,2" MinHeight="0" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="2" Grid.RowSpan="2" Grid.Column="2" Style="{StaticResource Hint}" MaxWidth="210" VerticalAlignment="Center"
+                                   Text="La cabecera es la franja superior del marcador; el acento colorea el periodo." />
+                    </Grid>
+                </Border>
+
+                <!-- Logos -->
+                <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Logos" FontWeight="SemiBold" />
+                        <DockPanel Margin="0,8,0,0">
+                            <Border DockPanel.Dock="Left" Style="{StaticResource PreviewBox}">
+                                <Image Source="{Binding LogoPreview, Converter={StaticResource ImageData}, ConverterParameter=128}"
+                                       Style="{StaticResource DeskIdentityImage}" AutomationProperties.AutomationId="IdentityLogoPreview" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Logo del evento (a la derecha de la cabecera)" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding LogoText}" Style="{StaticResource Hint}" AutomationProperties.AutomationId="IdentityLogoText" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Button Content="Cargar…" Command="{Binding LoadLogoCommand}" Padding="10,2" MinHeight="0"
+                                            AutomationProperties.AutomationId="LoadEventLogo" />
+                                    <Button Content="Quitar" Command="{Binding RemoveLogoCommand}" Padding="10,2" MinHeight="0"
+                                            AutomationProperties.AutomationId="RemoveEventLogo" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <DockPanel Margin="0,10,0,0">
+                            <Border DockPanel.Dock="Left" Style="{StaticResource PreviewBox}">
+                                <Image Source="{Binding OrganizerLogoPreview, Converter={StaticResource ImageData}, ConverterParameter=128}"
+                                       Style="{StaticResource DeskIdentityImage}" AutomationProperties.AutomationId="IdentityOrganizerLogoPreview" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Logo de la organización, identidad FDNDA (a la izquierda de la cabecera)" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding OrganizerLogoText}" Style="{StaticResource Hint}" AutomationProperties.AutomationId="IdentityOrganizerLogoText" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Button Content="Cargar…" Command="{Binding LoadOrganizerLogoCommand}" Padding="10,2" MinHeight="0"
+                                            AutomationProperties.AutomationId="LoadOrganizerLogo" />
+                                    <Button Content="Quitar" Command="{Binding RemoveOrganizerLogoCommand}" Padding="10,2" MinHeight="0"
+                                            AutomationProperties.AutomationId="RemoveOrganizerLogo" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Auspiciadores -->
+                <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="{Binding SponsorsTitle}" FontWeight="SemiBold" AutomationProperties.AutomationId="IdentitySponsorsTitle" />
+                        <StackPanel DockPanel.Dock="Right" Margin="10,6,0,0">
+                            <Button Content="Agregar…" Command="{Binding AddSponsorCommand}" Margin="0,0,0,6" AutomationProperties.AutomationId="AddSponsor" />
+                            <Button Content="Quitar" Command="{Binding RemoveSponsorCommand}" Margin="0,0,0,6" AutomationProperties.AutomationId="RemoveSponsor" />
+                            <Button Content="Subir" Command="{Binding MoveSponsorUpCommand}" Margin="0,0,0,6" AutomationProperties.AutomationId="MoveSponsorUp" />
+                            <Button Content="Bajar" Command="{Binding MoveSponsorDownCommand}" Margin="0" AutomationProperties.AutomationId="MoveSponsorDown" />
+                        </StackPanel>
+                        <ListBox ItemsSource="{Binding Sponsors}" SelectedItem="{Binding SelectedSponsor}" MinHeight="120" Margin="0,6,0,0"
+                                 HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="IdentitySponsors" AutomationProperties.Name="Auspiciadores">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SponsorItem}">
+                                    <DockPanel Margin="0,2">
+                                        <Border DockPanel.Dock="Left" Background="#0D2238" CornerRadius="3" Width="110" Height="46" Padding="4" Margin="0,0,10,0">
+                                            <Image Source="{Binding Preview, Converter={StaticResource ImageData}, ConverterParameter=80}"
+                                                   Style="{StaticResource DeskIdentityImage}" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" MaxLength="60" Padding="3"
+                                                     AutomationProperties.Name="Nombre del auspiciador" />
+                                            <TextBlock Text="{Binding Description}" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="{x:Static vm:EventIdentityViewModel.LimitsNote}" Style="{StaticResource Hint}" Margin="0,8,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -1,0 +1,1127 @@
+﻿<Window x:Class="FDNDA.Waterpolo.Desktop.Views.MesaWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Marcador de Waterpolo FDNDA — Mesa"
+        Width="1360" Height="800" MinWidth="1100" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource SurfaceBrush}"
+        FontFamily="Segoe UI" FontSize="14">
+
+    <Window.Resources>
+        <!-- Color por gravedad de conexión (Tag = ConnectionLevel): verde, ámbar, rojo o gris. -->
+        <SolidColorBrush x:Key="OkBrush" Color="#2E7D32" />
+        <SolidColorBrush x:Key="WarnBrush" Color="#B26A00" />
+        <SolidColorBrush x:Key="InactiveBrush" Color="#8A96A3" />
+        <Style x:Key="LevelText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource InactiveBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Ok">
+                    <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Warning">
+                    <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Fault">
+                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="LevelDot" TargetType="Ellipse">
+            <Setter Property="Width" Value="12" />
+            <Setter Property="Height" Value="12" />
+            <Setter Property="Fill" Value="{StaticResource InactiveBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Ok">
+                    <Setter Property="Fill" Value="{StaticResource OkBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Warning">
+                    <Setter Property="Fill" Value="{StaticResource WarnBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Fault">
+                    <Setter Property="Fill" Value="{StaticResource DangerBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Jugador de la nómina: gorro y nombre; los nombres largos se recortan con el nombre completo en la ayuda. -->
+        <DataTemplate x:Key="RosterPlayerTemplate">
+            <DockPanel ToolTip="{Binding PlayerName}">
+                <TextBlock DockPanel.Dock="Left" Text="{Binding Cap}" FontWeight="SemiBold" MinWidth="30" TextAlignment="Right" Margin="0,0,10,0" />
+                <TextBlock Text="{Binding PlayerName}" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Window.InputBindings>
+        <KeyBinding Key="F5" Command="{Binding GoalHomeCommand}" />
+        <KeyBinding Key="F8" Command="{Binding GoalAwayCommand}" />
+        <KeyBinding Key="F6" Command="{Binding IncidentHomeCommand}" />
+        <KeyBinding Key="F9" Command="{Binding IncidentAwayCommand}" />
+    </Window.InputBindings>
+
+    <DockPanel>
+        <!-- Barra de estado -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="12,8">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Command="{Binding ShowDiagnosticsCommand}" Margin="16,0,0,0" Padding="6,0" MinWidth="0" MinHeight="0"
+                        Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="Ver el estado de conexiones"
+                        AutomationProperties.AutomationId="ConnectionShort" AutomationProperties.Name="{Binding Connections.ShortText}">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Style="{StaticResource LevelDot}" Tag="{Binding Connections.OverallLevel}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock Style="{StaticResource LevelText}" Tag="{Binding Connections.OverallLevel}">
+                            <Run Text="Conexiones:" /> <Run Text="{Binding Connections.ShortText, Mode=OneWay}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+                <TextBlock DockPanel.Dock="Right" Foreground="{StaticResource MutedBrush}" Margin="16,0,0,0">
+                    <Run Text="Operador:" /> <Run Text="{Binding Info.OperatorName, Mode=OneWay}" FontWeight="SemiBold" />
+                    <Run Text="  ·  Perfil:" /> <Run Text="{Binding Info.ProfileText, Mode=OneWay}" FontWeight="SemiBold" />
+                </TextBlock>
+                <TextBlock x:Name="StatusText" AutomationProperties.AutomationId="StatusMessage"
+                           Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </DockPanel>
+        </Border>
+
+        <TabControl SelectedIndex="{Binding SelectedTabIndex}" Margin="8" AutomationProperties.AutomationId="MainTabs">
+
+            <!-- 1. Eventos y nóminas -->
+            <TabItem Header="Eventos y nóminas" AutomationProperties.AutomationId="CatalogTab">
+                <Grid DataContext="{Binding Catalog}" Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="340" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Mensaje del catálogo -->
+                    <DockPanel Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Content="Actualizar" Command="{Binding RefreshCommand}" Margin="0"
+                                AutomationProperties.AutomationId="RefreshCatalog" />
+                        <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="CatalogStatus">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </DockPanel>
+
+                    <!-- Eventos -->
+                    <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" Text="Eventos" />
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                                <TextBlock Text="{Binding TournamentFormTitle}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <Label Content="Nombre del evento:" Target="{Binding ElementName=TournamentNameBox}" Padding="0,0,0,2" />
+                                <TextBox x:Name="TournamentNameBox" Text="{Binding TournamentName, UpdateSourceTrigger=PropertyChanged}" MaxLength="120"
+                                         Padding="4" AutomationProperties.AutomationId="TournamentName" />
+                                <TextBlock Text="{Binding TournamentRulesText}" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                                           TextWrapping="Wrap" Margin="0,4,0,0" AutomationProperties.AutomationId="TournamentRules" />
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Content="Guardar evento" Command="{Binding SaveTournamentCommand}" AutomationProperties.AutomationId="SaveTournament" />
+                                    <Button Content="Nuevo evento" Command="{Binding NewTournamentCommand}" AutomationProperties.AutomationId="NewTournament" />
+                                    <Button Content="Reglas del evento…" Command="{Binding EditRulesCommand}" AutomationProperties.AutomationId="EditRules"
+                                            ToolTip="Periodos, descansos, tiempos muertos, posesión y tanda. Los partidos iniciados o cerrados no cambian." />
+                                    <Button Content="Identidad y plantilla…" Command="{Binding EditIdentityCommand}" Margin="0,6,8,0"
+                                            AutomationProperties.AutomationId="EditIdentity"
+                                            ToolTip="Título, colores, logos y auspiciadores del marcador para este evento. Incluye una plantilla de ejemplo." />
+                                </WrapPanel>
+                            </StackPanel>
+                            <ListView ItemsSource="{Binding Tournaments}" SelectedItem="{Binding SelectedTournament}"
+                                      AutomationProperties.AutomationId="TournamentList" AutomationProperties.Name="Eventos">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Evento" Width="250" DisplayMemberBinding="{Binding Name}" />
+                                        <GridViewColumn Header="Partidos" Width="70" DisplayMemberBinding="{Binding MatchCount}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Equipos -->
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,8,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" Text="Equipos y selecciones" />
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                                <TextBlock Text="{Binding TeamFormTitle}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Label Grid.Row="0" Content="Código:" Target="{Binding ElementName=TeamCodeBox}" />
+                                    <TextBox x:Name="TeamCodeBox" Grid.Row="0" Grid.Column="1" Text="{Binding TeamCode, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="10" Margin="0,2" Padding="4" CharacterCasing="Upper" AutomationProperties.AutomationId="TeamCode" />
+                                    <Label Grid.Row="1" Content="Nombre:" Target="{Binding ElementName=TeamNameBox}" />
+                                    <TextBox x:Name="TeamNameBox" Grid.Row="1" Grid.Column="1" Text="{Binding TeamName, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="80" Margin="0,2" Padding="4" AutomationProperties.AutomationId="TeamName" />
+                                    <Label Grid.Row="2" Content="Color:" Target="{Binding ElementName=TeamColorBox}" />
+                                    <TextBox x:Name="TeamColorBox" Grid.Row="2" Grid.Column="1" Text="{Binding TeamColor, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="7" Margin="0,2" Padding="4" AutomationProperties.AutomationId="TeamColor" />
+                                    <Border Grid.Row="2" Grid.Column="2" Width="28" Height="22" Margin="6,0,0,0" CornerRadius="3"
+                                            BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Background="{Binding TeamColor}" />
+                                    <!-- Paleta rápida: un clic aplica el color; «Más colores…» abre el selector de Windows. -->
+                                    <WrapPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,2,0,4">
+                                        <ItemsControl ItemsSource="{Binding Palette}" AutomationProperties.AutomationId="TeamPalette">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Width="24" Height="24" MinWidth="0" MinHeight="0" Margin="0,0,4,4" Padding="0"
+                                                            Background="{Binding Hex}" BorderBrush="{StaticResource LineBrush}" ToolTip="{Binding Name}"
+                                                            AutomationProperties.Name="{Binding Name}"
+                                                            AutomationProperties.AutomationId="{Binding Name, StringFormat='Color_{0}'}"
+                                                            Command="{Binding DataContext.PickTeamColorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding Hex}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Button Content="Más colores…" Command="{Binding ChooseTeamColorCommand}" Margin="0,0,0,4" Padding="8,2" MinHeight="0"
+                                                AutomationProperties.AutomationId="ChooseTeamColor" />
+                                    </WrapPanel>
+                                    <Label Grid.Row="4" Content="Color de gorro:" Target="{Binding ElementName=TeamCapBox}" />
+                                    <ComboBox x:Name="TeamCapBox" Grid.Row="4" Grid.Column="1" IsEditable="True" ItemsSource="{Binding CapColorSuggestions}"
+                                              Text="{Binding TeamCapColor, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" Padding="4"
+                                              AutomationProperties.AutomationId="TeamCapColor" />
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button Content="Guardar equipo" Command="{Binding SaveTeamCommand}" AutomationProperties.AutomationId="SaveTeam" />
+                                    <Button Content="Nuevo equipo" Command="{Binding NewTeamCommand}" AutomationProperties.AutomationId="NewTeam" />
+                                </StackPanel>
+                                <!-- Escudo y bandera: se guardan al elegirlos, sin pulsar «Guardar equipo». -->
+                                <Grid Margin="0,10,0,0" IsEnabled="{Binding CanEditTeamImages}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <DockPanel Grid.Column="0" Margin="0,0,6,0">
+                                        <Border DockPanel.Dock="Left" Background="#0D2238" CornerRadius="3" Width="54" Height="54" Padding="3" Margin="0,0,8,0">
+                                            <Image Source="{Binding TeamCrest, Converter={StaticResource ImageData}, ConverterParameter=96}"
+                                                   Style="{StaticResource DeskIdentityImage}" AutomationProperties.AutomationId="TeamCrestPreview" />
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="Escudo" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding TeamCrestText}" Foreground="{StaticResource MutedBrush}" FontSize="11"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding TeamCrestText}" AutomationProperties.AutomationId="TeamCrestText" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                <Button Content="Cargar…" Command="{Binding LoadTeamCrestCommand}" Padding="8,1" MinHeight="0" Margin="0,0,4,0"
+                                                        AutomationProperties.AutomationId="LoadTeamCrest" />
+                                                <Button Content="Quitar" Command="{Binding RemoveTeamCrestCommand}" Padding="8,1" MinHeight="0" Margin="0"
+                                                        AutomationProperties.AutomationId="RemoveTeamCrest" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DockPanel Grid.Column="1" Margin="6,0,0,0">
+                                        <Border DockPanel.Dock="Left" Background="#0D2238" CornerRadius="3" Width="54" Height="54" Padding="3" Margin="0,0,8,0">
+                                            <Image Source="{Binding TeamFlag, Converter={StaticResource ImageData}, ConverterParameter=96}"
+                                                   Style="{StaticResource DeskIdentityImage}" AutomationProperties.AutomationId="TeamFlagPreview" />
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="Bandera" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding TeamFlagText}" Foreground="{StaticResource MutedBrush}" FontSize="11"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding TeamFlagText}" AutomationProperties.AutomationId="TeamFlagText" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                <Button Content="Cargar…" Command="{Binding LoadTeamFlagCommand}" Padding="8,1" MinHeight="0" Margin="0,0,4,0"
+                                                        AutomationProperties.AutomationId="LoadTeamFlag" />
+                                                <Button Content="Quitar" Command="{Binding RemoveTeamFlagCommand}" Padding="8,1" MinHeight="0" Margin="0"
+                                                        AutomationProperties.AutomationId="RemoveTeamFlag" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Grid>
+                                <TextBlock Text="{Binding TeamImagesHint}" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"
+                                           Text="Editar un equipo no cambia los partidos ya programados: cada partido guarda su copia." />
+                            </StackPanel>
+                            <ListView ItemsSource="{Binding Teams}" SelectedItem="{Binding SelectedTeam}"
+                                      AutomationProperties.AutomationId="TeamList" AutomationProperties.Name="Equipos">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="" Width="34">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Width="18" Height="14" CornerRadius="2" Background="{Binding ColorHex}" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Código" Width="70" DisplayMemberBinding="{Binding Code}" />
+                                        <GridViewColumn Header="Nombre" Width="220">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Gorro" Width="90" DisplayMemberBinding="{Binding CapColor}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Nómina del equipo en el evento: edición manual e importación -->
+                    <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource Card}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" Text="{Binding RosterTitle}" TextWrapping="Wrap"
+                                       AutomationProperties.AutomationId="RosterTitle" />
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                <Button Content="Importar nómina…" Command="{Binding ImportRosterCommand}" HorizontalAlignment="Left" Margin="0"
+                                        AutomationProperties.AutomationId="ImportRoster" />
+                                <TextBlock Text="{Binding ImportHint}" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0" IsEnabled="{Binding CanEditRoster}">
+                                <TextBlock Text="{Binding RosterFormTitle}" FontWeight="SemiBold" Margin="0,0,0,4" AutomationProperties.AutomationId="RosterFormTitle" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Label Grid.Row="0" Content="Nombre:" Target="{Binding ElementName=RosterNameBox}" />
+                                    <TextBox x:Name="RosterNameBox" Grid.Row="0" Grid.Column="1" Text="{Binding RosterPlayerName, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="80" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RosterPlayerName" />
+                                    <Label Grid.Row="1" Content="Gorro (1–99):" Target="{Binding ElementName=RosterCapBox}" />
+                                    <TextBox x:Name="RosterCapBox" Grid.Row="1" Grid.Column="1" Text="{Binding RosterCapText, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="2" Width="60" HorizontalAlignment="Left" Margin="0,2" Padding="4" AutomationProperties.AutomationId="RosterCap" />
+                                </Grid>
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Content="Guardar jugador" Command="{Binding SaveRosterPlayerCommand}" AutomationProperties.AutomationId="SaveRosterPlayer" />
+                                    <Button Content="Nuevo" Command="{Binding NewRosterPlayerCommand}" AutomationProperties.AutomationId="NewRosterPlayer" />
+                                    <Button Content="Quitar" Command="{Binding RemoveRosterPlayerCommand}" AutomationProperties.AutomationId="RemoveRosterPlayer" />
+                                </WrapPanel>
+                                <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"
+                                           Text="Los partidos ya programados conservan la nómina con la que se programaron; para pasarles la vigente, use «Actualizar nómina» en la pestaña Partidos." />
+                            </StackPanel>
+                            <ListBox ItemsSource="{Binding RosterLines}" SelectedItem="{Binding SelectedRosterLine}" AutomationProperties.AutomationId="TournamentRoster"
+                                     AutomationProperties.Name="Nómina" ItemTemplate="{StaticResource RosterPlayerTemplate}" HorizontalContentAlignment="Stretch" />
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- 2. Partidos -->
+            <TabItem Header="Partidos" AutomationProperties.AutomationId="MatchesTab">
+                <DockPanel Margin="12">
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <WrapPanel>
+                            <Button Content="_Abrir en mesa" Command="{Binding OpenSelectedMatchCommand}" Style="{StaticResource PrimaryButton}"
+                                    AutomationProperties.AutomationId="OpenMatch" />
+                            <Button Content="Actualizar _lista" Command="{Binding RefreshMatchesCommand}" VerticalAlignment="Center" />
+                            <Button Content="Re_programar…" Command="{Binding Catalog.BeginRescheduleCommand}" VerticalAlignment="Center"
+                                    ToolTip="Carga el partido en el formulario de abajo para cambiar descripción, fecha, colores y gorros."
+                                    AutomationProperties.AutomationId="RescheduleMatch" />
+                            <Button Content="Actualizar _nómina" Command="{Binding Catalog.RefreshMatchRosterCommand}" VerticalAlignment="Center"
+                                    ToolTip="Copia al partido la nómina vigente de ambos equipos en el evento (solo antes de iniciarlo)."
+                                    AutomationProperties.AutomationId="RefreshMatchRoster" />
+                            <Button Content="Anular partido…" Command="{Binding Catalog.CancelMatchCommand}" VerticalAlignment="Center"
+                                    ToolTip="Anula un partido aún no iniciado, con motivo. No se borra: queda como «Anulado»."
+                                    AutomationProperties.AutomationId="CancelMatch" />
+                        </WrapPanel>
+                        <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" AutomationProperties.AutomationId="ListedMatchHint">
+                            <Run Text="Solo puede haber un partido en juego a la vez." />
+                            <Run Text="{Binding Catalog.ListedMatchHint, Mode=OneWay}" />
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Programar partido -->
+                    <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="0,10,0,0" DataContext="{Binding Catalog}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="{Binding ScheduleFormTitle}" AutomationProperties.AutomationId="ScheduleFormTitle" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Label Grid.Row="0" Grid.Column="0" Content="Evento:" Target="{Binding ElementName=ScheduleTournamentBox}" />
+                                <ComboBox x:Name="ScheduleTournamentBox" Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Tournaments}"
+                                          SelectedItem="{Binding ScheduleTournament}" DisplayMemberPath="Name" Margin="0,2,12,2"
+                                          IsEnabled="{Binding CanChooseScheduleTeams}"
+                                          AutomationProperties.AutomationId="ScheduleTournament" />
+                                <Label Grid.Row="0" Grid.Column="2" Content="Descripción:" Target="{Binding ElementName=ScheduleLabelBox}" />
+                                <TextBox x:Name="ScheduleLabelBox" Grid.Row="0" Grid.Column="3" Text="{Binding ScheduleLabel, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="80" Margin="0,2,12,2" Padding="4" AutomationProperties.AutomationId="ScheduleLabel"
+                                         ToolTip="Por ejemplo: Fecha 1, Semifinal, Final." />
+                                <Label Grid.Row="0" Grid.Column="4" Content="Fecha (dd/mm/aaaa hh:mm):" Target="{Binding ElementName=ScheduleDateBox}" />
+                                <TextBox x:Name="ScheduleDateBox" Grid.Row="0" Grid.Column="5" Text="{Binding ScheduleDateText, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="16" Margin="0,2" Padding="4" AutomationProperties.AutomationId="ScheduleDate"
+                                         ToolTip="Hora local, por ejemplo 14/03/2027 15:30. Puede quedar vacía." />
+
+                                <Label Grid.Row="1" Grid.Column="0" Content="Local:" Target="{Binding ElementName=ScheduleHomeBox}" />
+                                <ComboBox x:Name="ScheduleHomeBox" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Teams}"
+                                          SelectedItem="{Binding ScheduleHome}" DisplayMemberPath="Label" Margin="0,2,12,2"
+                                          IsEnabled="{Binding CanChooseScheduleTeams}"
+                                          AutomationProperties.AutomationId="ScheduleHome" />
+                                <Label Grid.Row="1" Grid.Column="2" Content="Color local:" Target="{Binding ElementName=ScheduleHomeColorBox}" />
+                                <DockPanel Grid.Row="1" Grid.Column="3" Margin="0,2,12,2">
+                                    <Button DockPanel.Dock="Right" Content="…" Command="{Binding ChooseHomeColorCommand}" Margin="4,0,0,0" Padding="6,0" MinWidth="0"
+                                            ToolTip="Elegir color" AutomationProperties.AutomationId="ChooseHomeColor" AutomationProperties.Name="Elegir color local" />
+                                    <Border DockPanel.Dock="Right" Width="24" Margin="6,0,0,0" CornerRadius="3" BorderBrush="{StaticResource LineBrush}"
+                                            BorderThickness="1" Background="{Binding ScheduleHomeColor}" />
+                                    <TextBox x:Name="ScheduleHomeColorBox" Text="{Binding ScheduleHomeColor, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="7" Padding="4" AutomationProperties.AutomationId="ScheduleHomeColor" />
+                                </DockPanel>
+                                <Label Grid.Row="1" Grid.Column="4" Content="Gorro local:" Target="{Binding ElementName=ScheduleHomeCapBox}" />
+                                <TextBox x:Name="ScheduleHomeCapBox" Grid.Row="1" Grid.Column="5" Text="{Binding ScheduleHomeCap, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="30" Margin="0,2" Padding="4" AutomationProperties.AutomationId="ScheduleHomeCap" />
+
+                                <Label Grid.Row="2" Grid.Column="0" Content="Visita:" Target="{Binding ElementName=ScheduleAwayBox}" />
+                                <ComboBox x:Name="ScheduleAwayBox" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Teams}"
+                                          SelectedItem="{Binding ScheduleAway}" DisplayMemberPath="Label" Margin="0,2,12,2"
+                                          IsEnabled="{Binding CanChooseScheduleTeams}"
+                                          AutomationProperties.AutomationId="ScheduleAway" />
+                                <Label Grid.Row="2" Grid.Column="2" Content="Color visita:" Target="{Binding ElementName=ScheduleAwayColorBox}" />
+                                <DockPanel Grid.Row="2" Grid.Column="3" Margin="0,2,12,2">
+                                    <Button DockPanel.Dock="Right" Content="…" Command="{Binding ChooseAwayColorCommand}" Margin="4,0,0,0" Padding="6,0" MinWidth="0"
+                                            ToolTip="Elegir color" AutomationProperties.AutomationId="ChooseAwayColor" AutomationProperties.Name="Elegir color visita" />
+                                    <Border DockPanel.Dock="Right" Width="24" Margin="6,0,0,0" CornerRadius="3" BorderBrush="{StaticResource LineBrush}"
+                                            BorderThickness="1" Background="{Binding ScheduleAwayColor}" />
+                                    <TextBox x:Name="ScheduleAwayColorBox" Text="{Binding ScheduleAwayColor, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="7" Padding="4" AutomationProperties.AutomationId="ScheduleAwayColor" />
+                                </DockPanel>
+                                <Label Grid.Row="2" Grid.Column="4" Content="Gorro visita:" Target="{Binding ElementName=ScheduleAwayCapBox}" />
+                                <TextBox x:Name="ScheduleAwayCapBox" Grid.Row="2" Grid.Column="5" Text="{Binding ScheduleAwayCap, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="30" Margin="0,2" Padding="4" AutomationProperties.AutomationId="ScheduleAwayCap" />
+
+                                <DockPanel Grid.Row="3" Grid.ColumnSpan="6" Margin="0,8,0,0">
+                                    <Button DockPanel.Dock="Left" Content="{Binding ScheduleButtonText}" Command="{Binding ScheduleMatchCommand}"
+                                            Style="{StaticResource PrimaryButton}" AutomationProperties.AutomationId="ScheduleMatch" />
+                                    <Button DockPanel.Dock="Left" Content="Cancelar" Command="{Binding CancelRescheduleCommand}"
+                                            Visibility="{Binding IsRescheduling, Converter={StaticResource BoolToVisibility}}"
+                                            AutomationProperties.AutomationId="CancelReschedule" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ScheduleRosterInfo}" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap"
+                                                   AutomationProperties.AutomationId="ScheduleRosterInfo" />
+                                        <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" AutomationProperties.AutomationId="ScheduleStatus">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <ListView ItemsSource="{Binding Matches}" SelectedItem="{Binding SelectedMatch}" AutomationProperties.AutomationId="MatchList">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Evento" Width="260" DisplayMemberBinding="{Binding Tournament}" />
+                                <GridViewColumn Header="Partido" Width="200" DisplayMemberBinding="{Binding Label}" />
+                                <GridViewColumn Header="Local" Width="260" DisplayMemberBinding="{Binding Home}" />
+                                <GridViewColumn Header="Visita" Width="260" DisplayMemberBinding="{Binding Away}" />
+                                <GridViewColumn Header="Estado" Width="110" DisplayMemberBinding="{Binding Status}" />
+                                <GridViewColumn Header="Programado" Width="150" DisplayMemberBinding="{Binding Scheduled}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </DockPanel>
+            </TabItem>
+
+            <!-- 3. Mesa de control -->
+            <TabItem Header="Mesa de control" AutomationProperties.AutomationId="MesaTab">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabecera: equipos lado a lado, resultado, periodo, relojes, fuente y señal -->
+                    <Border Grid.Row="0" Background="{StaticResource InkBrush}" CornerRadius="8" Padding="16,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" Grid.ColumnSpan="5" Margin="0,0,0,6">
+                                <Border DockPanel.Dock="Right" Background="{StaticResource DemoBrush}" CornerRadius="4" Padding="10,3"
+                                        Visibility="{Binding IsSimulation, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding SourceLabel}" FontWeight="Bold" Foreground="Black" AutomationProperties.AutomationId="DemoBadge" />
+                                </Border>
+                                <TextBlock Text="{Binding MatchTitle}" Foreground="#D9E2EC" FontSize="15" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+
+                            <!-- Local -->
+                            <DockPanel Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <Image Height="34" MaxWidth="52" Margin="0,0,6,0" Style="{StaticResource DeskIdentityImage}"
+                                           Source="{Binding HomeFlag, Converter={StaticResource ImageData}, ConverterParameter=68}"
+                                           AutomationProperties.AutomationId="HomeFlag" />
+                                    <Image Height="60" MaxWidth="60" Style="{StaticResource DeskIdentityImage}"
+                                           Source="{Binding HomeCrest, Converter={StaticResource ImageData}, ConverterParameter=120}"
+                                           AutomationProperties.AutomationId="HomeCrest" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="LOCAL" Foreground="#9FB3C8" FontSize="12" HorizontalAlignment="Right" />
+                                    <TextBlock Text="{Binding HomeName}" Foreground="White" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               TextAlignment="Right" MaxHeight="68" TextTrimming="CharacterEllipsis" />
+                                    <Border Height="6" CornerRadius="3" Background="{Binding HomeColor}" Margin="0,4,0,2" />
+                                    <TextBlock Text="{Binding HomeCapColor}" Foreground="#9FB3C8" FontSize="12" HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </DockPanel>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding HomeScore}" Foreground="White" FontSize="84" FontWeight="Bold"
+                                       Margin="24,0" VerticalAlignment="Center" MinWidth="90" TextAlignment="Center"
+                                       AutomationProperties.AutomationId="HomeScore" />
+
+                            <!-- Centro: etapa y relojes -->
+                            <StackPanel Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" MinWidth="330">
+                                <TextBlock Text="{Binding StageText}" Foreground="#FFD54F" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"
+                                           AutomationProperties.AutomationId="StageText" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                                    <StackPanel Margin="0,0,24,0">
+                                        <TextBlock Text="TIEMPO" Foreground="#9FB3C8" FontSize="11" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding GameClockText}" Foreground="White" FontSize="52" FontWeight="SemiBold" HorizontalAlignment="Center"
+                                                   AutomationProperties.AutomationId="GameClock" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="POSESIÓN" Foreground="#9FB3C8" FontSize="11" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding ShotClockText}" Foreground="#FF8A80" FontSize="52" FontWeight="SemiBold" HorizontalAlignment="Center"
+                                                   MinWidth="70" TextAlignment="Center" AutomationProperties.AutomationId="ShotClock" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock HorizontalAlignment="Center" FontSize="13" FontWeight="SemiBold" AutomationProperties.AutomationId="SignalText">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#FF8A80" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSignalOk}" Value="True">
+                                                    <Setter Property="Foreground" Value="#A5D6A7" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                    <Run Text="{Binding SignalText, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding RunningText, Mode=OneWay}" Foreground="#D9E2EC" FontWeight="Normal" />
+                                </TextBlock>
+                                <!-- Tanda: aparte del resultado reglamentario, que no cambia -->
+                                <TextBlock Text="{Binding ShootoutText}" Foreground="#FFD54F" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                                           Margin="0,4,0,0" AutomationProperties.AutomationId="ShootoutText"
+                                           Visibility="{Binding HasShootout, Converter={StaticResource BoolToVisibility}}" />
+                            </StackPanel>
+
+                            <!-- Visita -->
+                            <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding AwayScore}" Foreground="White" FontSize="84" FontWeight="Bold"
+                                       Margin="24,0" VerticalAlignment="Center" MinWidth="90" TextAlignment="Center"
+                                       AutomationProperties.AutomationId="AwayScore" />
+                            <DockPanel Grid.Row="1" Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <Image Height="60" MaxWidth="60" Style="{StaticResource DeskIdentityImage}"
+                                           Source="{Binding AwayCrest, Converter={StaticResource ImageData}, ConverterParameter=120}"
+                                           AutomationProperties.AutomationId="AwayCrest" />
+                                    <Image Height="34" MaxWidth="52" Margin="6,0,0,0" Style="{StaticResource DeskIdentityImage}"
+                                           Source="{Binding AwayFlag, Converter={StaticResource ImageData}, ConverterParameter=68}"
+                                           AutomationProperties.AutomationId="AwayFlag" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="VISITA" Foreground="#9FB3C8" FontSize="12" />
+                                    <TextBlock Text="{Binding AwayName}" Foreground="White" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               MaxHeight="68" TextTrimming="CharacterEllipsis" />
+                                    <Border Height="6" CornerRadius="3" Background="{Binding AwayColor}" Margin="0,4,0,2" />
+                                    <TextBlock Text="{Binding AwayCapColor}" Foreground="#9FB3C8" FontSize="12" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Aviso de la fuente de tiempo (pérdida de señal o fuente no disponible) -->
+                    <Border Grid.Row="1" Margin="0,8,0,0">
+                        <StackPanel>
+                            <Border Background="#FDECEA" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,0,0,8"
+                                    Visibility="{Binding TimingNotice, Converter={StaticResource NotNullToVisibility}}">
+                                <TextBlock Foreground="{StaticResource DangerBrush}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                           AutomationProperties.AutomationId="TimingNotice">
+                                    <Run Text="{Binding TimingNotice, Mode=OneWay}" />
+                                    <Run Text=" Las incidencias pueden seguir registrándose; quedarán con contexto de reloj no confirmado." FontWeight="Normal" />
+                                </TextBlock>
+                            </Border>
+
+                            <!-- Periodo de la consola distinto del de la mesa: solo aviso, la mesa no cambia sola -->
+                            <Border Background="#FFF4E5" BorderBrush="{StaticResource WarnBrush}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,0,0,8"
+                                    Visibility="{Binding PeriodMismatchText, Converter={StaticResource NotNullToVisibility}}">
+                                <TextBlock Text="{Binding PeriodMismatchText}" Foreground="{StaticResource WarnBrush}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                           AutomationProperties.AutomationId="PeriodMismatch" />
+                            </Border>
+
+                            <!-- Estado del partido y marcador de audiencia -->
+                            <WrapPanel>
+                                <Button Content="_Iniciar partido" Command="{Binding StartMatchCommand}" AutomationProperties.AutomationId="StartMatch" />
+                                <Button Content="Iniciar _descanso" Command="{Binding StartBreakCommand}" AutomationProperties.AutomationId="StartBreak" />
+                                <Button Content="{Binding NextPeriodLabel}" Command="{Binding StartNextPeriodCommand}" AutomationProperties.AutomationId="NextPeriod" />
+                                <Button Content="Iniciar _tanda" Command="{Binding StartShootoutCommand}" AutomationProperties.AutomationId="StartShootout"
+                                        ToolTip="{Binding ShootoutHint}" ToolTipService.ShowOnDisabled="True" />
+                                <Button Content="An_ular tanda…" Command="{Binding CancelShootoutCommand}" AutomationProperties.AutomationId="CancelShootout"
+                                        ToolTip="Deshace una tanda iniciada por error. Antes hay que anular sus lanzamientos."
+                                        Visibility="{Binding IsShootoutStage, Converter={StaticResource BoolToVisibility}}" />
+                                <Button Content="_Finalizar partido" Command="{Binding FinishMatchCommand}" AutomationProperties.AutomationId="FinishMatch" />
+                                <Button Content="_Reabrir…" Command="{Binding ReopenMatchCommand}" AutomationProperties.AutomationId="ReopenMatch" />
+                                <Border Width="1" Background="{StaticResource LineBrush}" Margin="8,2,16,2" />
+                                <TextBlock Text="Marcador:" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold" />
+                                <ComboBox ItemsSource="{Binding Monitors}" SelectedItem="{Binding SelectedMonitor}" DisplayMemberPath="Label"
+                                          MinWidth="230" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.AutomationId="MonitorList"
+                                          AutomationProperties.Name="Pantalla del marcador" />
+                                <CheckBox Content="Pantalla _completa" IsChecked="{Binding ScoreboardFullScreen}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <Button Content="Abrir _marcador" Command="{Binding OpenScoreboardCommand}" AutomationProperties.AutomationId="OpenScoreboard" />
+                                <Button Content="Cerrar marcador" Command="{Binding CloseScoreboardCommand}" AutomationProperties.AutomationId="CloseScoreboard" />
+                                <CheckBox Content="A_nimaciones:" IsChecked="{Binding ScoreboardSettings.AnimationsEnabled}" VerticalAlignment="Center"
+                                          ToolTip="Activa o desactiva todos los avisos animados del marcador de audiencia."
+                                          AutomationProperties.AutomationId="AnimationsEnabled" />
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0"
+                                            IsEnabled="{Binding ScoreboardSettings.AnimationsEnabled}">
+                                    <CheckBox Content="gol" IsChecked="{Binding ScoreboardSettings.GoalAnimationsEnabled}" Margin="0,0,8,0"
+                                              ToolTip="Aviso de gol y de penal convertido." AutomationProperties.AutomationId="GoalAnimations" />
+                                    <CheckBox Content="exclusión" IsChecked="{Binding ScoreboardSettings.ExclusionAnimationsEnabled}" Margin="0,0,8,0"
+                                              ToolTip="Aviso de exclusión o expulsión." AutomationProperties.AutomationId="ExclusionAnimations" />
+                                    <CheckBox Content="tiempo muerto" IsChecked="{Binding ScoreboardSettings.TimeoutAnimationsEnabled}" Margin="0,0,8,0"
+                                              ToolTip="Aviso de tiempo muerto: al registrarlo y al terminar en la consola." AutomationProperties.AutomationId="TimeoutAnimations" />
+                                    <CheckBox Content="falta" IsChecked="{Binding ScoreboardSettings.FoulAnimationsEnabled}" Margin="0,0,8,0"
+                                              ToolTip="Aviso de falta personal." AutomationProperties.AutomationId="FoulAnimations" />
+                                    <CheckBox Content="periodos" IsChecked="{Binding ScoreboardSettings.PeriodAnimationsEnabled}"
+                                              ToolTip="Anuncio de inicio de periodo, descanso, tanda y final." AutomationProperties.AutomationId="PeriodAnimations" />
+                                </StackPanel>
+                            </WrapPanel>
+                            <TextBlock Text="{Binding RulesText}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,6,0,0"
+                                       TextWrapping="Wrap" AutomationProperties.AutomationId="MatchRules" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Nóminas e incidencias -->
+                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="270" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="270" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Nómina local -->
+                        <Border Grid.Column="0" Style="{StaticResource Card}">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}">
+                                    <Run Text="Local · " /><Run Text="{Binding HomeName, Mode=OneWay}" />
+                                </TextBlock>
+                                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                                    <Button Content="GOL _local  (F5)" Command="{Binding GoalHomeCommand}" Style="{StaticResource PrimaryButton}"
+                                            Margin="0,0,0,6" AutomationProperties.AutomationId="GoalHome" />
+                                    <TextBlock Text="{Binding SelectedRegistrationOption.Label}" TextWrapping="Wrap" Margin="0,0,0,4" FontWeight="SemiBold" />
+                                    <Button Content="Registrar local (F6)" Command="{Binding IncidentHomeCommand}" Margin="0"
+                                            AutomationProperties.AutomationId="IncidentHome" />
+                                </StackPanel>
+                                <ListBox ItemsSource="{Binding HomeRoster}" SelectedItem="{Binding SelectedHomePlayer}"
+                                         ItemTemplate="{StaticResource RosterPlayerTemplate}" HorizontalContentAlignment="Stretch"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         FontSize="15" AutomationProperties.AutomationId="HomeRoster" AutomationProperties.Name="Nómina local" />
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Incidencias y corrección -->
+                        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                                    <Label Content="Tipo de i_ncidencia (F6 local / F9 visita):" Target="{Binding ElementName=IncidentTypeBox}" />
+                                    <ComboBox x:Name="IncidentTypeBox" ItemsSource="{Binding RegistrationOptions}"
+                                              SelectedItem="{Binding SelectedRegistrationOption}" DisplayMemberPath="Label"
+                                              MinHeight="32" AutomationProperties.AutomationId="IncidentType" />
+                                    <TextBlock Text="Tiempo muerto: solo equipo. Los demás tipos requieren jugador." TextWrapping="Wrap"
+                                               FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,4" />
+                                </StackPanel>
+                                <TabControl Grid.Row="1" AutomationProperties.AutomationId="IncidentTabs">
+                                <TabItem Header="Historial · más reciente primero" AutomationProperties.AutomationId="IncidentHistoryTab">
+                                <ListView ItemsSource="{Binding Incidents}" SelectedItem="{Binding SelectedIncident}"
+                                          AutomationProperties.AutomationId="IncidentList" AutomationProperties.Name="Incidencias">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsVoided}" Value="True">
+                                                    <Setter Property="Foreground" Value="#9AA5B1" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="N.º" Width="44" DisplayMemberBinding="{Binding Sequence}" />
+                                            <GridViewColumn Header="Tipo" Width="144" DisplayMemberBinding="{Binding TypeText}" />
+                                            <GridViewColumn Header="Per." Width="58" DisplayMemberBinding="{Binding Period}" />
+                                            <GridViewColumn Header="Reloj" Width="78" DisplayMemberBinding="{Binding Clock}" />
+                                            <GridViewColumn Header="Equipo" Width="64" DisplayMemberBinding="{Binding Team}" />
+                                            <GridViewColumn Header="Gorro" Width="52" DisplayMemberBinding="{Binding Cap}" />
+                                            <GridViewColumn Header="Jugador" Width="160" DisplayMemberBinding="{Binding Player}" />
+                                            <GridViewColumn Header="Estado" Width="110" DisplayMemberBinding="{Binding State}" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                                </TabItem>
+
+                                <!-- Corrección sin salir del partido -->
+                                <TabItem Header="Corregir o anular" IsEnabled="{Binding HasSelectedIncident}"
+                                         AutomationProperties.AutomationId="IncidentCorrectionTab">
+                                <Border Padding="4">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                                  AutomationProperties.AutomationId="CorrectionPanel">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource SectionTitle}" Text="Corregir o anular la incidencia seleccionada" />
+                                        <ScrollViewer MaxHeight="82" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6">
+                                        <ItemsControl ItemsSource="{Binding SelectedIncident.History}"
+                                                      AutomationProperties.AutomationId="IncidentHistory">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        </ScrollViewer>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Label Grid.Row="0" Grid.Column="0" Content="Nuevo _jugador:" Target="{Binding ElementName=CorrectionPlayerBox}"
+                                                   Visibility="{Binding CorrectionNeedsPlayer, Converter={StaticResource BoolToVisibility}}" />
+                                            <ComboBox x:Name="CorrectionPlayerBox" Grid.Row="0" Grid.Column="1" ItemsSource="{Binding CorrectionPlayers}"
+                                                      SelectedItem="{Binding SelectedCorrectionPlayer}" DisplayMemberPath="LabelWithTeam" Margin="0,2"
+                                                      Visibility="{Binding CorrectionNeedsPlayer, Converter={StaticResource BoolToVisibility}}"
+                                                      AutomationProperties.AutomationId="CorrectionPlayer" />
+                                            <Label Grid.Row="1" Content="Equipo:" Target="{Binding ElementName=CorrectionTeamBox}"
+                                                   Visibility="{Binding CorrectionIsTimeout, Converter={StaticResource BoolToVisibility}}" />
+                                            <ComboBox x:Name="CorrectionTeamBox" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CorrectionTeams}"
+                                                      SelectedItem="{Binding SelectedCorrectionTeam}" DisplayMemberPath="Label" Margin="0,2"
+                                                      Visibility="{Binding CorrectionIsTimeout, Converter={StaticResource BoolToVisibility}}"
+                                                      AutomationProperties.AutomationId="CorrectionTeam" />
+                                            <Label Grid.Row="2" Content="Detalle:" Target="{Binding ElementName=CorrectionDetailBox}" />
+                                            <ComboBox x:Name="CorrectionDetailBox" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding CorrectionOptions}"
+                                                      SelectedItem="{Binding SelectedCorrectionOption}" DisplayMemberPath="Label" Margin="0,2"
+                                                      AutomationProperties.AutomationId="CorrectionDetail" />
+                                            <Label Grid.Row="3" Grid.Column="0" Content="M_otivo (obligatorio):" Target="{Binding ElementName=ReasonBox}" />
+                                            <TextBox x:Name="ReasonBox" Grid.Row="3" Grid.Column="1" Text="{Binding ReasonText, UpdateSourceTrigger=PropertyChanged}"
+                                                     MaxLength="300" Margin="0,2" Padding="4" AutomationProperties.AutomationId="ReasonText" />
+                                            <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,6,0,0">
+                                                <Button Content="Corregir incidencia" Command="{Binding CorrectIncidentCommand}" AutomationProperties.AutomationId="CorrectIncident" />
+                                                <Button Content="Anular incidencia" Command="{Binding VoidIncidentCommand}" AutomationProperties.AutomationId="VoidIncident" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+                                </TabItem>
+                                </TabControl>
+                            </Grid>
+                        </Border>
+
+                        <!-- Nómina visita -->
+                        <Border Grid.Column="2" Style="{StaticResource Card}">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" TextTrimming="CharacterEllipsis">
+                                    <Run Text="Visita · " /><Run Text="{Binding AwayName, Mode=OneWay}" />
+                                </TextBlock>
+                                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                                    <Button Content="GOL _visita  (F8)" Command="{Binding GoalAwayCommand}" Style="{StaticResource PrimaryButton}"
+                                            Margin="0,0,0,6" AutomationProperties.AutomationId="GoalAway" />
+                                    <TextBlock Text="{Binding SelectedRegistrationOption.Label}" TextWrapping="Wrap" Margin="0,0,0,4" FontWeight="SemiBold" />
+                                    <Button Content="Registrar visita (F9)" Command="{Binding IncidentAwayCommand}" Margin="0"
+                                            AutomationProperties.AutomationId="IncidentAway" />
+                                </StackPanel>
+                                <ListBox ItemsSource="{Binding AwayRoster}" SelectedItem="{Binding SelectedAwayPlayer}"
+                                         ItemTemplate="{StaticResource RosterPlayerTemplate}" HorizontalContentAlignment="Stretch"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         FontSize="15" AutomationProperties.AutomationId="AwayRoster" AutomationProperties.Name="Nómina visita" />
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Reproducción de una grabación: solo en modo demo, en lugar del simulador -->
+                    <Border Grid.Row="3" Margin="0,8,0,0" Background="#FFF3E0" BorderBrush="{StaticResource DemoBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8"
+                            Visibility="{Binding HasReplay, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,6" TextWrapping="Wrap"
+                                       Text="REPRODUCCIÓN de una grabación de cronometraje — solo DEMO, para ensayar. No es la consola: en operación real el tiempo lo maneja el Colorado System 6." />
+                            <Button DockPanel.Dock="Right" Content="Reiniciar reproducción" Command="{Binding RestartReplayCommand}" Margin="8,0,0,0"
+                                    AutomationProperties.AutomationId="RestartReplay" />
+                            <TextBlock Text="{Binding ReplayText}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.AutomationId="ReplayText" />
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Simulador: solo en modo demo -->
+                    <Border Grid.Row="3" Margin="0,8,0,0" Background="#FFF3E0" BorderBrush="{StaticResource DemoBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8"
+                            Visibility="{Binding HasSimulator, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,6"
+                                       Text="Simulador de consola — solo DEMO. En operación real estos controles no existen: el tiempo lo maneja el Colorado System 6." />
+                            <WrapPanel>
+                                <Button Content="▶ Iniciar reloj" Command="{Binding SimStartCommand}" AutomationProperties.AutomationId="SimStart" />
+                                <Button Content="⏸ Pausar reloj" Command="{Binding SimStopCommand}" AutomationProperties.AutomationId="SimStop" />
+                                <Button Content="Reset posesión" Command="{Binding SimResetShotCommand}" AutomationProperties.AutomationId="SimResetShot" />
+                                <Button Content="Cargar periodo nuevo" Command="{Binding SimLoadPeriodCommand}" AutomationProperties.AutomationId="SimLoadPeriod" />
+                                <Border Width="1" Background="{StaticResource DemoBrush}" Margin="8,2,16,2" />
+                                <Button Content="Iniciar tiempo muerto (60 s)" Command="{Binding SimStartTimeoutCommand}" AutomationProperties.AutomationId="SimStartTimeout" />
+                                <Button Content="Terminar tiempo muerto" Command="{Binding SimClearTimeoutCommand}" AutomationProperties.AutomationId="SimClearTimeout" />
+                                <Border Width="1" Background="{StaticResource DemoBrush}" Margin="8,2,16,2" />
+                                <Button Content="Simular pérdida de señal" Command="{Binding SimDropSignalCommand}" AutomationProperties.AutomationId="SimDropSignal" />
+                                <Button Content="Reconectar" Command="{Binding SimRestoreSignalCommand}" AutomationProperties.AutomationId="SimRestoreSignal" />
+                                <Border Width="1" Background="{StaticResource DemoBrush}" Margin="8,2,16,2" />
+                                <Button Content="Reproducir guion demo (30 s)" Command="{Binding SimRunScriptCommand}" AutomationProperties.AutomationId="SimRunScript" />
+                            </WrapPanel>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- 4. Resultados y respaldos -->
+            <TabItem Header="Resultados y respaldos" AutomationProperties.AutomationId="BackupsTab">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="460" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Resultados -->
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,0" DataContext="{Binding Results}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" Text="Resultados" />
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                <Label DockPanel.Dock="Left" Content="E_vento:" Target="{Binding ElementName=ResultsTournamentBox}" VerticalAlignment="Center" />
+                                <Button DockPanel.Dock="Right" Content="Actualizar" Command="{Binding RefreshCommand}" Margin="8,0,0,0"
+                                        AutomationProperties.AutomationId="RefreshResults" />
+                                <ComboBox x:Name="ResultsTournamentBox" ItemsSource="{Binding Tournaments}" SelectedItem="{Binding SelectedTournament}"
+                                          DisplayMemberPath="Name" Padding="4" AutomationProperties.AutomationId="ResultsTournament" />
+                            </DockPanel>
+                            <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <TextBlock Text="Resumen del evento:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <Button Content="Exportar PDF…" Command="{Binding ExportTournamentPdfCommand}" AutomationProperties.AutomationId="ExportTournamentPdf" />
+                                <Button Content="Exportar CSV…" Command="{Binding ExportTournamentCsvCommand}" AutomationProperties.AutomationId="ExportTournamentCsv" />
+                            </WrapPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="0,2,0,6"
+                                       AutomationProperties.AutomationId="ResultsStatus">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <!-- Partido elegido -->
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                                <TextBlock Text="{Binding MatchTitle}" FontWeight="SemiBold" TextWrapping="Wrap" AutomationProperties.AutomationId="ResultsMatchTitle" />
+                                <ListView ItemsSource="{Binding MatchTeams}" Margin="0,4,0,4" AutomationProperties.AutomationId="ResultsMatchTeams"
+                                          AutomationProperties.Name="Totales del partido">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Equipo" Width="230" DisplayMemberBinding="{Binding Team}" />
+                                            <GridViewColumn Header="Goles" Width="55" DisplayMemberBinding="{Binding Goals}" />
+                                            <GridViewColumn Header="Exclus." Width="60" DisplayMemberBinding="{Binding Exclusions}" />
+                                            <GridViewColumn Header="Expuls." Width="60" DisplayMemberBinding="{Binding Expulsions}" />
+                                            <GridViewColumn Header="Faltas" Width="55" DisplayMemberBinding="{Binding PersonalFouls}" />
+                                            <GridViewColumn Header="Penales (conv./no)" Width="120" DisplayMemberBinding="{Binding Penalties}" />
+                                            <GridViewColumn Header="T. muertos" Width="75" DisplayMemberBinding="{Binding Timeouts}" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                                <WrapPanel>
+                                    <TextBlock Text="Resumen del partido:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <Button Content="Exportar PDF…" Command="{Binding ExportMatchPdfCommand}" AutomationProperties.AutomationId="ExportMatchPdf" />
+                                    <Button Content="Exportar CSV…" Command="{Binding ExportMatchCsvCommand}" AutomationProperties.AutomationId="ExportMatchCsv" />
+                                </WrapPanel>
+                                <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                                           Text="Todo se deriva de las incidencias vigentes: las anuladas no cuentan y las corregidas cuentan con su último valor. La tanda de penales aún no se registra." />
+                            </StackPanel>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="5*" />
+                                    <ColumnDefinition Width="2*" MinWidth="230" />
+                                </Grid.ColumnDefinitions>
+                                <DockPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock DockPanel.Dock="Top" Text="{Binding TournamentSummary}" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                                               TextWrapping="Wrap" Margin="0,0,0,4" AutomationProperties.AutomationId="ResultsSummary" />
+                                    <ListView ItemsSource="{Binding Matches}" SelectedItem="{Binding SelectedMatch}"
+                                              AutomationProperties.AutomationId="ResultsMatches" AutomationProperties.Name="Resultados del evento">
+                                        <ListView.View>
+                                            <GridView>
+                                                <GridViewColumn Header="Fecha" Width="130" DisplayMemberBinding="{Binding DateText}" />
+                                                <GridViewColumn Header="Partido" Width="120" DisplayMemberBinding="{Binding Label}" />
+                                                <GridViewColumn Header="Local" Width="120" DisplayMemberBinding="{Binding Home}" />
+                                                <GridViewColumn Header="Res." Width="72" DisplayMemberBinding="{Binding ScoreText}" />
+                                                <GridViewColumn Header="Penales" Width="56" DisplayMemberBinding="{Binding ShootoutText}" />
+                                                <GridViewColumn Header="Visita" Width="120" DisplayMemberBinding="{Binding Away}" />
+                                                <GridViewColumn Header="Estado" Width="85" DisplayMemberBinding="{Binding StatusText}" />
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
+                                </DockPanel>
+                                <DockPanel Grid.Column="1">
+                                    <TextBlock DockPanel.Dock="Top" Text="Goleadores del evento" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                    <ListView ItemsSource="{Binding Scorers}" AutomationProperties.AutomationId="ResultsScorers" AutomationProperties.Name="Goleadores del evento">
+                                        <ListView.View>
+                                            <GridView>
+                                                <GridViewColumn Header="Jugador" Width="140" DisplayMemberBinding="{Binding PlayerName}" />
+                                                <GridViewColumn Header="Equipo" Width="55" DisplayMemberBinding="{Binding TeamCode}" />
+                                                <GridViewColumn Header="Goles" Width="50" DisplayMemberBinding="{Binding Goals}" />
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
+                                </DockPanel>
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Respaldos -->
+                    <Border Grid.Column="1" Style="{StaticResource Card}" DataContext="{Binding Backups}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" Text="Respaldos" />
+                            <TextBlock DockPanel.Dock="Top" Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="0,0,0,6"
+                                       AutomationProperties.AutomationId="BackupStatus">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock DockPanel.Dock="Top" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8">
+                                <Run Text="Copia verificada de todos los datos de este perfil: eventos, equipos, nóminas, reglas, partidos e incidencias. Para llevarla a otra computadora, copie el archivo de la carpeta y use «Restaurar desde otro archivo…» allá." />
+                                <LineBreak />
+                                <Run Text="Carpeta:" /> <Run Text="{Binding FolderText, Mode=OneWay}" FontWeight="SemiBold" />
+                            </TextBlock>
+                            <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <Button Content="Crear respaldo ahora" Command="{Binding CreateBackupCommand}" Style="{StaticResource PrimaryButton}"
+                                        AutomationProperties.AutomationId="CreateBackup" />
+                                <Button Content="Restaurar el seleccionado…" Command="{Binding RestoreSelectedCommand}"
+                                        AutomationProperties.AutomationId="RestoreSelectedBackup" />
+                                <Button Content="Restaurar desde otro archivo…" Command="{Binding RestoreFromFileCommand}"
+                                        AutomationProperties.AutomationId="RestoreBackupFromFile" />
+                                <Button Content="Abrir carpeta" Command="{Binding OpenFolderCommand}"
+                                        AutomationProperties.AutomationId="OpenBackupFolder" />
+                                <Button Content="Actualizar" Command="{Binding RefreshCommand}" AutomationProperties.AutomationId="RefreshBackups" />
+                            </WrapPanel>
+                            <CheckBox DockPanel.Dock="Top" IsChecked="{Binding AutoBackupEnabled}" Margin="0,4,0,4"
+                                      AutomationProperties.AutomationId="AutoBackup">
+                                <TextBlock Text="Respaldar automáticamente antes de iniciar y al finalizar cada partido" TextWrapping="Wrap" />
+                            </CheckBox>
+                            <TextBlock DockPanel.Dock="Top" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"
+                                       Text="No se puede restaurar con un partido en juego. Antes de restaurar se guarda una copia de los datos actuales; si algo falla, el programa vuelve a ellos." />
+                            <TextBlock DockPanel.Dock="Top" Text="{Binding ListTitle}" FontWeight="SemiBold" Margin="0,0,0,4"
+                                       AutomationProperties.AutomationId="BackupCount" />
+                            <ListView ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedBackup}"
+                                      AutomationProperties.AutomationId="BackupList" AutomationProperties.Name="Respaldos">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="ToolTip" Value="{Binding FileName}" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Fecha y hora" Width="140" DisplayMemberBinding="{Binding CreatedText}" />
+                                        <GridViewColumn Header="Motivo" Width="200" DisplayMemberBinding="{Binding ReasonText}" />
+                                        <GridViewColumn Header="Tamaño" Width="70" DisplayMemberBinding="{Binding SizeText}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- 5. Configuración / diagnóstico -->
+            <TabItem Header="Configuración / diagnóstico" AutomationProperties.AutomationId="DiagnosticsTab">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16" MaxWidth="1100" HorizontalAlignment="Left">
+                        <!-- Estado de conexiones: lo que puede fallar durante un partido -->
+                        <StackPanel DataContext="{Binding Connections}" Margin="0,0,0,18">
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="Estado de conexiones" />
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,10">
+                                        <Button DockPanel.Dock="Right" Content="Comprobar ahora" Command="{Binding CheckNowCommand}" Margin="10,0,0,0"
+                                                AutomationProperties.AutomationId="CheckConnections" />
+                                        <Ellipse DockPanel.Dock="Left" Style="{StaticResource LevelDot}" Tag="{Binding OverallLevel}" Width="18" Height="18"
+                                                 VerticalAlignment="Center" Margin="0,0,10,0" />
+                                        <TextBlock Text="{Binding OverallText}" Style="{StaticResource LevelText}" Tag="{Binding OverallLevel}" FontSize="16"
+                                                   FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"
+                                                   AutomationProperties.AutomationId="ConnectionOverall" />
+                                    </DockPanel>
+                                    <ItemsControl ItemsSource="{Binding Items}" AutomationProperties.AutomationId="ConnectionItems">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="24" />
+                                                            <ColumnDefinition Width="210" />
+                                                            <ColumnDefinition Width="250" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Ellipse Style="{StaticResource LevelDot}" Tag="{Binding Level}" VerticalAlignment="Top" Margin="0,4,0,0" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding StateText}" Style="{StaticResource LevelText}" Tag="{Binding Level}"
+                                                                   TextWrapping="Wrap" Margin="0,0,10,0"
+                                                                   AutomationProperties.AutomationId="{Binding Key, StringFormat='Estado_{0}'}" />
+                                                        <TextBlock Grid.Column="3" Text="{Binding Detail}" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                                                                   TextWrapping="Wrap" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Margin="0,12,0,4" FontWeight="SemiBold" Text="Historial de conexión de esta sesión (más reciente primero)" />
+                            <Border Style="{StaticResource Card}">
+                                <ListBox ItemsSource="{Binding History}" MaxHeight="200" MinHeight="60" BorderThickness="0"
+                                         AutomationProperties.AutomationId="ConnectionHistory" AutomationProperties.Name="Historial de conexión">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Style="{StaticResource LevelDot}" Tag="{Binding Level}" Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                <TextBlock Text="{Binding TimeText}" FontFamily="Consolas" Margin="0,0,10,0" />
+                                                <TextBlock Text="{Binding Message}" Style="{StaticResource LevelText}" Tag="{Binding Level}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Border>
+                            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                                       Text="El programa solo lee la consola; nunca le envía datos. La consola aparece «Conectada» únicamente cuando llegan datos válidos de ella. En el perfil DEMO el tiempo viene del simulador y la consola no se usa." />
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Diagnóstico local" />
+                        <Border Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="210" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Versión del programa" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Info.Version}" Margin="0,3" />
+                                <TextBlock Grid.Row="1" Text="Perfil de datos" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Info.ProfileText}" Margin="0,3" />
+                                <TextBlock Grid.Row="2" Text="Operador (identificación local)" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Info.OperatorName}" Margin="0,3" />
+                                <TextBlock Grid.Row="3" Text="Carpeta de datos" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" Margin="0,3" AutomationProperties.AutomationId="DataDirectory">
+                                    <Run Text="{Binding Info.DataDirectory, Mode=OneWay}" />
+                                    <Run Text="{Binding Info.DataLocationText, Mode=OneWay, StringFormat='  (elegida por: {0})'}" Foreground="{StaticResource MutedBrush}" />
+                                </TextBlock>
+                                <TextBlock Grid.Row="4" Text="Base de datos" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Info.DatabasePath}" TextWrapping="Wrap" Margin="0,3" />
+                                <TextBlock Grid.Row="5" Text="Versión del esquema" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Info.SchemaVersion}" Margin="0,3" />
+                                <TextBlock Grid.Row="6" Text="Registro de diagnóstico" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Info.LogPath}" TextWrapping="Wrap" Margin="0,3" />
+                                <TextBlock Grid.Row="7" Text="Fuente de tiempo" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding SourceLabel}" Margin="0,3" />
+                                <TextBlock Grid.Row="8" Text="Estado de la señal" Foreground="{StaticResource MutedBrush}" Margin="0,3" />
+                                <TextBlock Grid.Row="8" Grid.Column="1" TextWrapping="Wrap" Margin="0,3">
+                                    <Run Text="{Binding SignalText, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding TimingNotice, Mode=OneWay}" />
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="Abrir carpeta de datos" Command="{Binding OpenDataFolderCommand}" />
+                            <Button Content="Volver a detectar pantallas" Command="{Binding RedetectScreensCommand}"
+                                    AutomationProperties.AutomationId="RedetectScreens"
+                                    ToolTip="Vuelve a leer qué pantallas tiene conectadas Windows (útil tras enchufar o desenchufar el proyector o la pantalla LED) y actualiza el estado de conexiones. No cambia el partido ni mueve el marcador." />
+                        </StackPanel>
+                        <TextBlock Margin="0,14,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"
+                                   Text="El registro de diagnóstico es local, rotado y no contiene nóminas. El programa no usa internet ni envía datos a terceros. La identificación del operador es local y no equivale a autenticación fuerte." />
+                        <TextBlock Margin="0,14,0,4" Style="{StaticResource SectionTitle}" Text="Margen seguro del marcador (% por lado)" />
+                        <StackPanel Orientation="Horizontal">
+                            <Slider Minimum="0" Maximum="10" TickFrequency="0.5" IsSnapToTickEnabled="True" Width="260"
+                                    Value="{Binding ScoreboardSettings.SafeMarginPercent}" AutomationProperties.Name="Margen seguro del marcador" />
+                            <TextBlock Text="{Binding ScoreboardSettings.SafeMarginPercent, StringFormat={}{0:0.0} %}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

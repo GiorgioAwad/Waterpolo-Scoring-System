@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>FDNDA.Waterpolo.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FDNDA.Waterpolo.Application\FDNDA.Waterpolo.Application.csproj" />
+    <ProjectReference Include="..\FDNDA.Waterpolo.Domain\FDNDA.Waterpolo.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <!-- Solo para LEER la consola Colorado por el puerto serie (SerialColoradoTransport). -->
+    <PackageReference Include="System.IO.Ports" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Migraciones versionadas, embebidas en el ensamblado. -->
+    <EmbeddedResource Include="Persistence\Migrations\*.sql" />
+    <!-- Imágenes genéricas de la plantilla de ejemplo y de la demo (originales, no oficiales). -->
+    <EmbeddedResource Include="..\..\samples\identidad-ejemplo\*.png" LinkBase="Identity\Ejemplo"
+                      LogicalName="FDNDA.Waterpolo.Identidad.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>
